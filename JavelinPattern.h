@@ -33,11 +33,11 @@ typedef void* jp_bytecode_t;
 #define JP_OPTION_PREFER_NFA                0x2000
 #define JP_OPTION_PREFER_BACK_TRACKING      0x4000
 #define JP_OPTION_PREFER_SCAN_AND_CAPTURE   0x6000
-#define JP_OPTION_PREFER_NO_SCAN            0x8000
+#define JP_OPTION_PREFER_NO_SCAN            0x8000	// Use this when you're primarily using jp_full_match to extract sub-matches from strings that are expected to match
 
 //============================================================================
 
-// Result codes from jp_compile & jp_precompile
+// Result codes from jp_pattern_compile & jp_bytecode_compile
 #define JP_RESULT_OK                                     0
 #define JP_RESULT_INTERNAL_ERROR                         1
 
@@ -48,7 +48,7 @@ typedef void* jp_bytecode_t;
 #define JP_RESULT_MALFORMED_CONDITIONAL                  6
 #define JP_RESULT_MAXIMUM_REPETITION_COUNT_EXCEEDED      7
 #define JP_RESULT_MINIMUM_COUNT_EXCEEDS_MAXIMUM_COUNT    8
-#define JP_RESULT_TOO_MANY_BYTECODEINSTRUCTIONS          9
+#define JP_RESULT_TOO_MANY_BYTECODE_INSTRUCTIONS         9
 #define JP_RESULT_TOO_MANY_CAPTURES                      10
 #define JP_RESULT_TOO_MANY_PROGRESS_CHECK_INSTRUCTIONS   11
 #define JP_RESULT_UNABLE_TO_PARSE_GROUP_TYPE             12

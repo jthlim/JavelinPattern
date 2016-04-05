@@ -5,6 +5,8 @@ JavelinPattern is a regular expression engine which aims to be fast *and* featur
 Currently only a pre-built OSX library is provided with a basic C API while I try and
 clean up the code.
 
+There is also a pre-built OSX binary for [ag (the_silver_searcher)](https://github.com/jthlim/the_silver_searcher) that uses JavelinPattern.
+
 ## Features
 
 * JavelinPattern is *fast*
@@ -26,11 +28,39 @@ look-behinds, conditional regexes and other features. If you use one of these fe
 the back tracking engine will automatically be chosen. In other situations, the pattern
 compiler will try and determine the most effective engine to handle the supplied pattern.
 
-TODO: Insert graphs here.
+Javelin-BT is the performance when the `JP_OPTION_PREFER_BACK_TRACKING` flag is set.
+
+![Pattern Performance Graph](PatternPerformance.png)
+
+Test machine: Macbook Pro Retina Mid 2012, 2.6 GHz Intel Core i7, OSX El Capitan 10.11.4 using code modified from here: [Performance comparison of regular expression engines](http://sljit.sourceforge.net/regex_perf.html)
 
 ## API
 
-The API is a bare
+Check [JavelinPattern.h](JavelinPattern.h) to see the list of available functions (It's very brief)
+
+Example code snippet:
+
+```c
+#include "JavelinPattern.h"
+
+{
+  jp_pattern_t pattern;
+  int result = jp_pattern_compile(&pattern, "test(\\w+)", JP_OPTION_IGNORE_CASE | JP_OPTION_UTF8);
+  if(result != 0) ...
+
+  const void* captures[4];
+  if(jp_partial_match(pattern, data, strlen(data), captures, 0))
+  {
+     // captures[0] contains start of match (inclusive)
+	 // captures[1] contains end of match (exclusive)
+	 // captures[2] contains start of \\w+ subgroup match
+	 // captures[3] contains end of \\w+ subgroup match
+  }
+
+  jp_pattern_free(pattern);
+}
+
+```
 
 ## Supported Patterns
  
@@ -81,7 +111,7 @@ $               |         | End of line
 \\x{*###*}      |         | Unicode hex
 \\z             |         | End of input
 \\1             |    Y    | Back reference
-\\              |         | Backslash
+\\\\            |         | Backslash
 [...]           |         | Character set (ranges supported)
 [^...]          |         | Not character set (ranges supported)
 [[:*xxx*:]]     |         | POSIX character class *xxx*, eg `lower`, `alpha`
