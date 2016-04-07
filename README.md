@@ -10,11 +10,14 @@ There is also a pre-built OSX binary for [ag (the_silver_searcher)](https://gith
 ## Features
 
 * JavelinPattern is *fast*
-* Supports offline pattern compilation
-* Supports sub-match capturing
 * Multiple internal processing engines
+* Supports sub-match capturing
+* Supports minimal/maximal/possessive quantifiers
 * Supports unicode case folding
 * JavelinPattern really is *fast*...
+* Supports offline pattern compilation
+* Supports positive and negative lookaheads, lookbehinds
+* Supports conditional and recursive regexes
 * JIT for back tracking x64 engine
 * Automatic stack guarding (configurable auto-stack growth or fail match)
 * Threadsafe -- patterns can be used on multiple threads concurrently
@@ -30,12 +33,10 @@ compiler will try and determine the most effective engine to handle the supplied
 
 Test machine: Macbook Pro Retina Mid 2012, 2.6 GHz Intel Core i7, OSX El Capitan 10.11.4 using code modified from here: [Performance comparison of regular expression engines](http://sljit.sourceforge.net/regex_perf.html)
 
-Javelin-BT is the performance when the `JP_OPTION_PREFER_BACK_TRACKING` flag is set.
-
-ms to scan mtent12.txt
+Javelin-BT is the performance when the `JP_OPTION_PREFER_BACK_TRACKING` flag is set. The following table is the time taken (in milliseconds) to scan [mtent12.txt](http://www.gutenberg.org/files/3200/old/mtent12.zip) -- a text file approximately 20MB in size.
 
                                        | PCRE-DFA | PCRE-JIT | ONIG | RE2  | JAVELIN-BT | JAVELIN
----------------------------------------|----------|----------|------|------|------------|---------
+---------------------------------------|---------:|---------:|-----:|-----:|-----------:|---------:
 Twain                                  | 15       | 15       | 16   | 2    | 1          | 1
 (?i)Twain                              | 106      | 16       | 120  | 84   | 2          | 2
 [a-z]shing                             | 881      | 15       | 15   | 121  | 3          | 4
@@ -56,7 +57,7 @@ Tom.{10,25}river\|river.{10,25}Tom     | 119      | 14       | 85   | 81   | 3  
 
 ![Pattern Performance Graph](PatternPerformance.png)
 
-Note: Graphs based on µs resolution measurements
+Note: Graph based on µs resolution measurements
 
 ## API
 
@@ -77,8 +78,8 @@ Example code snippet:
   {
      // captures[0] contains start of match (inclusive)
 	 // captures[1] contains end of match (exclusive)
-	 // captures[2] contains start of \\w+ subgroup match
-	 // captures[3] contains end of \\w+ subgroup match
+	 // captures[2] contains start of \w+ subgroup match
+	 // captures[3] contains end of \w+ subgroup match
   }
 
   jp_pattern_free(pattern);
