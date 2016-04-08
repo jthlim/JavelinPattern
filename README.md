@@ -2,8 +2,8 @@
 
 JavelinPattern is a regular expression engine which aims to be fast *and* feature rich.
 
-Currently only a pre-built OSX library is provided with a basic C API while I try and
-clean up the code.
+Currently only pre-built libraries for OSX and linux are provided with a basic C API while I try and
+clean up the code. You will also need to include the libraries `dl` and `pthread` when you use them.
 
 There is also a pre-built OSX binary for [ag (the_silver_searcher)](https://github.com/jthlim/the_silver_searcher) that uses JavelinPattern.
 
