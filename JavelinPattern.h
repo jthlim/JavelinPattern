@@ -72,24 +72,24 @@ void        jp_bytecode_free(jp_bytecode_t bytecode);
 
 // Functions to create a pattern object.
 int  jp_pattern_compile(jp_pattern_t* out_result, const char* pattern, int options);
-int  jp_pattern_create(jp_pattern_t* out_result, const void* byte_code, size_t byte_code_length, bool make_copy);
+int  jp_pattern_create(jp_pattern_t* out_result, const void* byte_code, size_t byte_code_length, bool make_copy_of_byte_code);
 void jp_pattern_free(jp_pattern_t pattern);
 
 // Functions using pattern objects
 int    jp_get_number_of_captures(jp_pattern_t pattern);
-bool   jp_has_full_match(jp_pattern_t pattern, const void* data, size_t length);
-bool   jp_has_partial_match(jp_pattern_t pattern, const void* data, size_t length, size_t offset);
-bool   jp_full_match(jp_pattern_t pattern, const void* data, size_t length, const void** captures);
-bool   jp_partial_match(jp_pattern_t pattern, const void* data, size_t length, const void** captures, size_t offset);
-size_t jp_count_partial_matches(jp_pattern_t pattern, const void* data, size_t length, size_t offset);
+bool   jp_has_full_match(jp_pattern_t pattern, const void* data, size_t data_length);
+bool   jp_has_partial_match(jp_pattern_t pattern, const void* data, size_t data_length, size_t data_offset);
+bool   jp_full_match(jp_pattern_t pattern, const void* data, size_t data_length, const void** captures);
+bool   jp_partial_match(jp_pattern_t pattern, const void* data, size_t data_length, const void** captures, size_t data_offset);
+size_t jp_count_partial_matches(jp_pattern_t pattern, const void* data, size_t data_length, size_t data_offset);
 
 // Functions to control behavior of matching.
 void jp_dfa_memory_manager_mode_set_unlimited();
-void jp_dfa_memory_manager_mode_set_global_limit(size_t limit);
-void jp_dfa_memory_manager_mode_set_per_pattern_limit(size_t limit);
+void jp_dfa_memory_manager_mode_set_global_limit(size_t number_of_bytes_limit);
+void jp_dfa_memory_manager_mode_set_per_pattern_limit(size_t number_of_bytes_limit);
 
 void jp_stack_growth_handler_disable();
-void jp_stack_growth_handler_set(void* (*allocate)(size_t), void (*free)(void*));
+void jp_stack_growth_handler_set(void* (*allocate_function)(size_t), void (*free_function)(void*));
 
 //============================================================================
 
