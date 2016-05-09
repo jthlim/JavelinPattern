@@ -21,6 +21,7 @@ There is also a pre-built OSX binary for [ag (the_silver_searcher)](https://gith
 * JIT for back tracking x64 engine
 * Automatic stack guarding (configurable auto-stack growth or fail match)
 * Threadsafe -- patterns can be used on multiple threads concurrently
+* Support for glob syntax patterns
 * ... did I mention it is *fast* ?
 
 ## Performance
@@ -35,25 +36,25 @@ Test machine: Macbook Pro Retina Mid 2012, 2.6 GHz Intel Core i7, OSX El Capitan
 
 Javelin-BT is the performance when the `JP_OPTION_PREFER_BACK_TRACKING` flag is set. The following table is the time taken (in milliseconds) to scan [mtent12.txt](http://www.gutenberg.org/files/3200/old/mtent12.zip) -- a text file approximately 20MB in size.
 
-                                       | PCRE-DFA | PCRE-JIT | ONIG | RE2  | JAVELIN-BT | JAVELIN
----------------------------------------|---------:|---------:|-----:|-----:|-----------:|---------:
-Twain                                  | 15        | 15       | 16       | 2        | 1       | 1
-(?i)Twain                              | 106       | 16       | 120      | 84       | 2       | 2
-[a-z]shing                             | 881       | 15       | 15       | 121      | 3       | 4
-Huck[a-zA-Z]+\|Saw[a-zA-Z]+            | 56        | 3        | 45       | 73       | 2       | 2
-\b\w+nn\b                              | 1240      | 101      | 970      | 72       | 1       | 1
-[a-q][^u-z]{13}x                       | 2515      | 2        | 56       | 4175     | 1       | 2
-Tom\|Sawyer\|Huckleberry\|Finn         | 62        | 27       | 52       | 74       | 2       | 2
-(?i)Tom\|Sawyer\|Huckleberry\|Finn     | 451       | 77       | 562      | 109      | 3       | 3
-.{0,2}(Tom\|Sawyer\|Huckleberry\|Finn) | 4726      | 334      | 118      | 85       | 114     | 12
-.{2,4}(Tom\|Sawyer\|Huckleberry\|Finn) | 5905      | 367      | 118      | 80       | 124     | 13
-Tom.{10,25}river\|river.{10,25}Tom     | 119       | 14       | 85       | 81       | 3       | 6
-[a-zA-Z]+ing                           | 1978      | 73       | 1090     | 138      | 5       | 7
-\s[a-zA-Z]{0,12}ing\s                  | 911       | 105      | 77       | 100      | 72      | 45
-([A-Za-z]awyer\|[A-Za-z]inn)\s         | 1336      | 33       | 201      | 116      | 2       | 2
-["'][^"']{0,30}[?!\.]["']              | 130       | 13       | 94       | 77       | 5       | 8
-([0-9]+)-([0-9]+)-([0-9]+)             | 50        | 17       | 41       | 167      | 1       | 1
-**TOTAL**                              | **20479** | **1210** | **3661** | **5554** | **342** | **109**
+                                       | PCRE-DFA  | PCRE-JIT | ONIG     | RE2      | JAVELIN-BT | JAVELIN
+---------------------------------------|----------:|---------:|---------:|---------:|-----------:|---------:
+Twain                                  | 15        | 15       | 16       | 2        | 1          | 1
+(?i)Twain                              | 106       | 16       | 120      | 84       | 2          | 2
+[a-z]shing                             | 881       | 15       | 15       | 121      | 3          | 4
+Huck[a-zA-Z]+\|Saw[a-zA-Z]+            | 56        | 3        | 45       | 73       | 2          | 2
+\b\w+nn\b                              | 1240      | 101      | 970      | 72       | 1          | 1
+[a-q][^u-z]{13}x                       | 2515      | 2        | 56       | 4175     | 1          | 2
+Tom\|Sawyer\|Huckleberry\|Finn         | 62        | 27       | 52       | 74       | 2          | 2
+(?i)Tom\|Sawyer\|Huckleberry\|Finn     | 451       | 77       | 562      | 109      | 3          | 3
+.{0,2}(Tom\|Sawyer\|Huckleberry\|Finn) | 4726      | 334      | 118      | 85       | 114        | 12
+.{2,4}(Tom\|Sawyer\|Huckleberry\|Finn) | 5905      | 367      | 118      | 80       | 124        | 13
+Tom.{10,25}river\|river.{10,25}Tom     | 119       | 14       | 85       | 81       | 3          | 6
+[a-zA-Z]+ing                           | 1978      | 73       | 1090     | 138      | 5          | 7
+\s[a-zA-Z]{0,12}ing\s                  | 911       | 105      | 77       | 100      | 72         | 45
+([A-Za-z]awyer\|[A-Za-z]inn)\s         | 1336      | 33       | 201      | 116      | 2          | 2
+["'][^"']{0,30}[?!\.]["']              | 130       | 13       | 94       | 77       | 5          | 8
+([0-9]+)-([0-9]+)-([0-9]+)             | 50        | 17       | 41       | 167      | 1          | 1
+**TOTAL**                              | **20479** | **1210** | **3661** | **5554** | **342**    | **109**
 
 
 ![Pattern Performance Graph](PatternPerformance.png)
@@ -94,7 +95,7 @@ Example code snippet:
 ----------------|---------|--------------------------------------------------
 (...)           |         | Capture
 (?:...)         |         | Cluster
-(?...)          |         | Option change ('i', 's', 'm', 'u', 'U')
+(?*x*)          |         | Option change ('i', 's', 'm', 'u', 'U')
 (?#...)         |         | Comment
 (?=...)         |    Y    | Positive look-ahead
 (?!...)         |    Y    | Negative look-ahead
@@ -124,6 +125,7 @@ $               |         | End of line
 \\h             |         | Horizontal whitespace
 \\K             |         | Reset capture
 \\n             |         | Newline (ASCII 0x0a)
+\\Q...\\E       |         | Treat ... after \\Q as a literal until \\E is encountered
 \\r             |         | Carriage Return (ASCII 0x0d)
 \\s             |         | Whitespace
 \\S             |         | Not whitespace

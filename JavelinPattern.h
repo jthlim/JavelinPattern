@@ -24,7 +24,10 @@ typedef void* jp_bytecode_t;
 #define JP_OPTION_UNICODE_CASE              8       // "u" option. When IGNORE_CASE is used, this allows unicode case folding
 #define JP_OPTION_UNGREEDY                  0x10    // "U" option
 
-#define JP_OPTION_UTF8                      0x100   // Without this, text is treated as ASCII
+#define JP_OPTION_UTF8                      0x100   // Without this flag, text is treated as ASCII
+
+#define JP_OPTION_GLOB_SYNTAX               0x400   // With this flag, ? is treated as [^/], * as [^/]* and ** as .*  
+                                                    // You will probably combine this with JP_OPTION_ANCHORED
 
 #define JP_OPTION_ANCHORED                  0x800
 
@@ -59,8 +62,9 @@ typedef void* jp_bytecode_t;
 #define JP_RESULT_UNEXPECTED_GROUP_OPTIONS               17
 #define JP_RESULT_UNEXPECTED_HEX_CHARACTER               18
 #define JP_RESULT_UNEXPECTED_LOOK_BEHIND_TYPE            19
-#define JP_RESULT_UNKNOWN_ESCAPE                         20
-#define JP_RESULT_UNKNOWN_POSIX_CHARACTER_CLASS          21
+#define JP_RESULT_UNEXPECTED_TOKEN                       20
+#define JP_RESULT_UNKNOWN_ESCAPE                         21
+#define JP_RESULT_UNKNOWN_POSIX_CHARACTER_CLASS          22
 
 //============================================================================
 
