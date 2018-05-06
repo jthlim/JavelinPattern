@@ -37,7 +37,7 @@ Test machine: Macbook Pro Retina Mid 2012, 2.6 GHz Intel Core i7, OSX El Capitan
 Javelin-BT is the performance when the `JP_OPTION_PREFER_BACK_TRACKING` flag is set. The following table is the time taken (in milliseconds) to scan [mtent12.txt](http://www.gutenberg.org/files/3200/old/mtent12.zip) -- a text file approximately 20MB in size.
 
 |                                        | PCRE-DFA  | PCRE-JIT | ONIG     | RE2      | JAVELIN-BT | JAVELIN  |
-| ---------------------------------------|-----------|----------|----------|----------|------------|----------|
+|----------------------------------------|----------:|----------|---------:|---------:|-----------:|---------:|
 | Twain                                  | 15        | 15       | 16       | 2        | 1          | 1        |
 | (?i)Twain                              | 106       | 16       | 120      | 84       | 2          | 2        |
 | [a-z]shing                             | 881       | 15       | 15       | 121      | 3          | 4        |
