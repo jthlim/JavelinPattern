@@ -18,8 +18,8 @@ There is also a pre-built OSX binary for [ag (the_silver_searcher)](https://gith
 * Supports offline pattern compilation
 * Supports positive and negative lookaheads, lookbehinds
 * Supports conditional and recursive regexes
-* JIT for back tracking x64 engine
-* Automatic stack guarding (configurable auto-stack growth or fail match)
+* JIT for back tracking x64 and arm64 engine
+* Automatic stack guarding for x64 (configurable auto-stack growth or fail match)
 * Threadsafe -- patterns can be used on multiple threads concurrently
 * Support for glob syntax patterns
 * ... did I mention it is *fast* ?
