@@ -1,0 +1,296 @@
+// Adapted from http://corsix.github.io/dynasm-doc/tutorial.html
+
+#include "Javelin/Assembler/x64/Assembler.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/time.h>
+
+#define TAPE_SIZE 32768
+#define MAX_NESTING 100
+
+» .define p rbx
+
+unsigned char tape[TAPE_SIZE];
+
+typedef struct bf_state
+{
+  unsigned char* tape;
+  void (*put_ch)(unsigned char);
+  unsigned char (*get_ch)();
+} bf_state_t;
+
+#define bad_program(s) exit(fprintf(stderr, "bad program near %.16s: %s\n", program, s))
+
+static uint64_t GetMicroTime()
+{
+  timeval tp;
+  gettimeofday(&tp, nullptr);
+
+  return tp.tv_sec * 1000000ULL + tp.tv_usec;
+}
+
+static void UpdateOffset(Javelin::Assembler &assembler, int activeOffset)
+{
+  if(activeOffset == 1) {
+    » inc p
+  } else if(activeOffset == -1) {
+    » dec p
+  } else {
+    » add p, {activeOffset}
+  }
+}
+
+static bool bf_isBalancedLoopWithSingleDecrement(const char *program)
+{
+  int n;
+  int activeOffset = 0;
+  int offset0Adjust = 0;
+  for(;;) {
+    switch(*program++) {
+    case '<':
+      for(n = 1; *program == '<'; ++n, ++program);
+      activeOffset -= n;
+      break;
+    case '>':
+      for(n = 1; *program == '>'; ++n, ++program);
+      activeOffset += n;
+      break;
+    case '+':
+      for(n = 1; *program == '+'; ++n, ++program);
+      if(activeOffset == 0) offset0Adjust += n;
+      break;
+    case '-':
+      for(n = 1; *program == '-'; ++n, ++program);
+      if(activeOffset == 0) offset0Adjust -= n;
+      break;
+    case ',':
+    case '.':
+    case '[':
+      return false;
+    case ']':
+      return activeOffset == 0 && offset0Adjust == -1;
+    case 0:
+      program = "<EOF>";
+        bad_program("[ without matching ]");
+    }
+  }
+}
+
+static void bf_emitBalancedLoopWithSingleDecrement(Javelin::Assembler &assembler, const char *&program, int baseActiveOffset)
+{
+  int n;
+  int activeOffset = 0;
+  int offset0Adjust = 0;
+  » mov dl, [p + {baseActiveOffset}]
+  for(;;) {
+    switch(*program++) {
+      case '<':
+        for(n = 1; *program == '<'; ++n, ++program);
+        activeOffset -= n;
+        break;
+      case '>':
+        for(n = 1; *program == '>'; ++n, ++program);
+        activeOffset += n;
+        break;
+      case '+':
+        for(n = 1; *program == '+'; ++n, ++program);
+        if(activeOffset == 0) offset0Adjust += n;
+        else if (n == 1) {
+          » add [p + {baseActiveOffset+activeOffset}], dl
+        } else if (n == 2) {
+          » lea eax, [rdx + rdx]
+          » add [p + {baseActiveOffset+activeOffset}], al
+        } else {
+          » imul eax, edx, byte {n}
+          » add [p + {baseActiveOffset+activeOffset}], al
+        }
+        break;
+      case '-':
+        for(n = 1; *program == '-'; ++n, ++program);
+        if(activeOffset == 0) offset0Adjust += n;
+        else if (n == 1) {
+          » sub [p + {baseActiveOffset+activeOffset}], dl
+        } else if (n == 2) {
+          » lea eax, [rdx + rdx]
+          » sub [p + {baseActiveOffset+activeOffset}], al
+        } else {
+          » imul eax, edx, byte {n}
+          » sub [p + {baseActiveOffset+activeOffset}], al
+        }
+        break;
+      case ']':
+        » mov byte ptr [p + {baseActiveOffset}], 0
+        return;
+    }
+  }
+}
+
+static void bf_compile(const char* program, Javelin::Assembler &assembler)
+{
+  unsigned loops[MAX_NESTING];
+  int n;
+  int nloops = 0;
+  int labelIndex = 0;
+  int activeOffset = 0;
+  const char *start = program;
+
+  for(;;) {
+    switch(*program++) {
+    case '<':
+      for(n = 1; *program == '<'; ++n, ++program);
+      activeOffset -= n;
+      break;
+    case '>':
+      for(n = 1; *program == '>'; ++n, ++program);
+      activeOffset += n;
+      break;
+    case '+':
+      for(n = 1; *program == '+'; ++n, ++program);
+      if (n == 1) {
+        » inc byte ptr [p + {activeOffset}]
+      } else {
+        » add byte ptr [p + {activeOffset}], {n}
+      }
+      break;
+    case '-':
+      for(n = 1; *program == '-'; ++n, ++program);
+      if(n == 1) {
+        » dec byte ptr [p + {activeOffset}]
+      } else {
+        » sub byte ptr [p + {activeOffset}], {n}
+      }
+      break;
+    case ',':
+      » call r14
+      » mov [p + {activeOffset}], al
+      break;
+    case '.':
+      » movzx edi, byte ptr [p + {activeOffset}]
+      » call rbp
+      break;
+    case '[':
+      if(nloops == MAX_NESTING)
+        bad_program("Nesting too deep");
+      if(program[0] == '-' && program[1] == ']') {
+        // Special case zero detection,
+        » mov byte ptr [p + {activeOffset}], 0
+        program += 2;
+      }
+      else if(bf_isBalancedLoopWithSingleDecrement(program)) {
+        bf_emitBalancedLoopWithSingleDecrement(assembler, program, activeOffset);
+      } else {
+        // If the previuos symbol was also a while (*ptr)
+        // Then no updates to activeOffset or a comparison need to be made.
+        if(program-2 < start || program[-2] != '[') {
+          if(activeOffset) {
+            UpdateOffset(assembler, activeOffset);
+            activeOffset = 0;
+          }
+          » cmp byte ptr [p], 0
+          » jz {labelIndex+1}f
+          »{labelIndex}:
+          loops[nloops] = labelIndex|1;
+        } else {
+          »{labelIndex}:
+          loops[nloops] = labelIndex;
+        }
+        ++nloops;
+        labelIndex += 2;
+      }
+      break;
+    case ']':
+      if(nloops == 0) {
+        bad_program("] without matching [");
+      } else {
+        int labelIndex = loops[--nloops];
+        if(activeOffset) {
+          UpdateOffset(assembler, activeOffset);
+          activeOffset = 0;
+        }
+        if(labelIndex & 1)
+        {
+          » cmp byte ptr [p], 0
+          » jnz {labelIndex-1}b
+          »{labelIndex}:
+        }
+        else
+        {
+          » cmp byte ptr [p], 0
+          » jnz {labelIndex}b
+        }
+      }
+      break;
+    case 0:
+      if(nloops != 0) {
+        program = "<EOF>";
+        bad_program("[ without matching ]");
+      }
+      return;
+    }
+  }
+}
+
+static void bf_putchar(unsigned char c)
+{
+  putchar((int)c);
+}
+
+static unsigned char bf_getchar()
+{
+  return (unsigned char) getchar();
+}
+
+static void bf_run(const char* program)
+{
+  Javelin::Assembler assembler;
+  
+  » push rbx
+  » push rbp           // For stack alignment
+  » push r14
+  » mov p, [rdi]       // p = tape
+  » mov rbp, [rdi+8]   // rbp = putch
+  » mov r14, [rdi+16]  // r14 = getch
+  bf_compile(program, assembler);
+  » pop r14
+  » pop rbp
+  » pop rbx
+  » ret
+
+  void (*function)(bf_state_t*) = (void(*)(bf_state_t*))assembler.Build();
+
+  bf_state_t state;
+  state.tape = tape;
+  state.get_ch = bf_getchar;
+  state.put_ch = bf_putchar;
+  function(&state);
+
+  Javelin::SimpleJitMemoryManager::StaticInstanceRelease((void*) function);
+}
+
+int main(int argc, char** argv)
+{
+  uint64_t start = GetMicroTime();
+  if(argc == 2) {
+    long sz;
+    char* program;
+    FILE* f = fopen(argv[1], "r");
+    if(!f) {
+      fprintf(stderr, "Cannot open %s\n", argv[1]);
+      return 1;
+    }
+    fseek(f, 0, SEEK_END);
+    sz = ftell(f);
+    program = (char*)malloc(sz + 1);
+    fseek(f, 0, SEEK_SET);
+    program[fread(program, 1, sz, f)] = 0;
+    fclose(f);
+    bf_run(program);
+    uint64_t end = GetMicroTime();
+    printf("Execution time: %lluus\n", end-start);
+  } else {
+    fprintf(stderr, "Usage: %s INFILE.bf\n", argv[0]);
+    return 1;
+  }
+  return 0;
+}

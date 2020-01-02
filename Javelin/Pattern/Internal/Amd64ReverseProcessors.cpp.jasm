@@ -1,0 +1,1271 @@
+//============================================================================
+//
+// This provides Amd64 JIT versions of:
+//  OnePassReverseProcessor
+//  BackTrackingReverseProcessor
+//
+//============================================================================
+
+#include "Javelin/Pattern/Internal/PatternReverseProcessor.h"
+
+#if PATTERN_USE_JIT && defined(JABI_AMD64_SYSTEM_V)
+
+#include "Javelin/Assembler/Assembler.h"
+#include "Javelin/Container/EnumSet.h"
+#include "Javelin/Math/BitUtility.h"
+#include "Javelin/Pattern/Internal/Amd64PatternProcessorsFindMethods.h"
+
+//============================================================================
+
+using namespace Javelin;
+using namespace Javelin::PatternInternal;
+
+//============================================================================
+
+// SystemV ABI:
+// Registers are passed in rdi, rsi, rdx, rcx, r8, r9, xmm0-xmm7
+// Stack must be 16-byte aligned before calls.
+// Scratch Regsiters: rax, rdi, rsi, rdx, rcx, r8-r11, xmm0-xmm7
+// Callee saved registers: rbx, rsp, rbp, r12-r15, xmm8-xmm15
+// Return value: rax
+
+// Microsoft ABI:
+// Registers are passed in rcx, rdx, r8, r9, xmm0-xmm3
+// Stack must be 16-byte aligned before calls.
+// 32-byte redzone
+// Scratch Regsiters: ???
+// Callee saved registers: rbx, rsp, rbp, r12-r15, xmm8-xmm15
+// Return value: rax
+
+// Register index order:
+// 0: rax
+// 1: rcx
+// 2: rdx
+// 3: rbx
+// 4: rsp
+// 5: rbp
+// 6: rsi
+// 7: rdi
+// 8-15: r8-r15
+
+// Main call has the following parameters:
+//   void* Match(const void* data,      // rsi
+//               size_t length,         // rdx
+//               size_t startOffset,    // rcx
+//               const void* matchEnd,  // r8
+//               const char **captures, // r9
+//               bool matchIsAnchored)  // [rsp+8]
+
+// SystemV: r10
+// Only requried for BackTracking and if AssertStartOfInput, AssertStartOfLine,
+// AssertWordBoundary, AssertNotWordBoundary are present.
+» .define pStart				r10
+
+// SystemV: r11
+// Only requried for BackTracking and if AssertEndOfInput, AssertEndOfLine,
+// AssertWordBoundary, AssertNotWordBoundary are present.
+» .define pEnd					r11
+
+// SystemV: rdx
+// Always required.
+» .define pStop					rdx
+
+// SystemV: rsi
+» .define p 					rsi
+
+// SystemV: r8
+// Only required for BackTracking
+» .define pLeftMostMatch		r8
+
+// SystemV: r9
+// Only required for OnePass
+» .define pCaptures				r9
+
+// SystemV: r8
+// Not required for OnePass
+» .define matchIsAnchored		r9b
+
+// At rbp - offset.
+// Not required for OnePass
+» .define pProgressCheckBase	rbp
+
+// Use for SplitNNext and SplitNextN instructions. This is a callee saved register
+» .define pEndRepeat			rbx
+
+» .define scratch64				rcx
+» .define scratch32				ecx
+» .define scratch8				cl
+» .define scratch0_64			rcx
+» .define scratch0_32			ecx
+» .define scratch0_8			cl
+» .define scratch1_64			rdi
+» .define scratch1_32			edi
+
+» .define jumpTableAlignment	32
+» .macro markStartOfInstruction PC
+» .if{context.hasByteJumpToByteJump && context.byteJumpTargetPcs.Contains(PC)}
+»    .unalign jumpTableAlignment
+» .endif
+»   {PC}:
+» .endm
+
+» .macro startSearch TARGET
+«  if(context.ShouldDirectBranchToStartingInstruction()) {
+«    if(TARGET != 0) {
+»      jmp {TARGET}f
+«    }
+«  } else {
+»    call {TARGET}f
+«  }
+» .endm
+
+» .define readOffset {context.DataOffsetForPc(pc)}
+
+» .macro advanceP
+»   .if {pc >= context.checkPEndPc}
+»     dec p
+»   .endif
+» .endm
+
+//============================================================================
+
+namespace
+{
+	struct AssemblerContext
+	{
+		PatternProcessorType type;
+		bool needsStart					= false;
+		bool needsEnd    				= false;
+		bool hasByteJumpToByteJump 		= false;
+		OpenHashSet<uint32_t> byteJumpTargetPcs;
+		
+		int checkPStartPc = -1;
+		int checkPEndPc = -1;
+
+		Assembler& assembler;
+		const PatternData& patternData;
+		const ByteCodeHeader *header;
+
+		struct RegistersToSave
+		{
+			bool needsStackFrame = false;
+		};
+		
+		RegistersToSave registersToSave;
+		
+		AssemblerContext(Assembler &aAssembler, const PatternData& aPatternData, const ByteCodeHeader *aHeader, PatternProcessorType aType);
+		
+		void CheckSufficientDataAndMarkInstructionStart(int pc);
+		int DataOffsetForPc(int pc);
+
+		RegistersToSave GetRegistersToSave() const;
+		void EmitProlog() const;
+		void EmitEpilog() const;
+		
+		bool ShouldDirectBranchToStartingInstruction() const { return registersToSave.needsStackFrame == false; }
+		
+		int OffsetForProgressCheck(int index) const { return (-header->numberOfProgressChecks + index) * 8 ; }
+		int OffsetForReturnPointer() const { return registersToSave.needsStackFrame ? header->numberOfProgressChecks * 8 + 8 : 0; }
+	};
+}
+
+AssemblerContext::AssemblerContext(Assembler &aAssembler, const PatternData& aPatternData, const ByteCodeHeader *aHeader, PatternProcessorType aType)
+: assembler(aAssembler),
+  patternData(aPatternData),
+  header(aHeader),
+  type(aType)
+{
+	for(int pc = 0; pc < header->numberOfReverseInstructions; ++pc)
+	{
+		ByteCodeInstruction instruction = patternData[pc];
+		switch(instruction.type)
+		{
+			case InstructionType::AssertStartOfInput:
+			case InstructionType::AssertStartOfLine:
+				if(type == PatternProcessorType::BackTracking)
+				{
+					needsStart = true;
+				}
+				break;
+			case InstructionType::AssertWordBoundary:
+			case InstructionType::AssertNotWordBoundary:
+				if(type == PatternProcessorType::BackTracking)
+				{
+					needsStart = true;
+					needsEnd = true;
+				}
+				break;
+			case InstructionType::AssertEndOfInput:
+			case InstructionType::AssertEndOfLine:
+				if(type == PatternProcessorType::BackTracking)
+				{
+					needsEnd = true;
+				}
+				break;
+			case InstructionType::ByteJumpTable:
+				{
+					const ByteCodeJumpTableData* data = patternData.GetData<ByteCodeJumpTableData>(instruction.data);
+					
+					if(patternData.HasLookupTableTarget(*data))
+					{
+						hasByteJumpToByteJump = true;
+					}
+					
+					for(int i = 0; i < data->numberOfTargets; ++i)
+					{
+						byteJumpTargetPcs.Put(data->pcData[i]);
+					}
+				}
+				break;
+			case InstructionType::AssertRecurseValue:
+			case InstructionType::Recurse:
+			case InstructionType::ReturnIfRecurseValue:
+			case InstructionType::SearchByte:
+			case InstructionType::SearchByteEitherOf2:
+			case InstructionType::SearchByteEitherOf3:
+			case InstructionType::SearchByteEitherOf4:
+			case InstructionType::SearchByteEitherOf5:
+			case InstructionType::SearchByteEitherOf6:
+			case InstructionType::SearchByteEitherOf7:
+			case InstructionType::SearchByteEitherOf8:
+			case InstructionType::SearchBytePair:
+			case InstructionType::SearchBytePair2:
+			case InstructionType::SearchBytePair3:
+			case InstructionType::SearchBytePair4:
+			case InstructionType::SearchByteRange:
+			case InstructionType::SearchByteRangePair:
+			case InstructionType::SearchByteTriplet:
+			case InstructionType::SearchByteTriplet2:
+			case InstructionType::SearchBoyerMoore:
+			case InstructionType::SearchShiftOr:
+			case InstructionType::BackReference:
+				JERROR("Unexpected instruction for reverse processor");
+				break;
+			default:
+				break;
+		}
+	}
+
+	registersToSave = GetRegistersToSave();
+}
+
+void AssemblerContext::CheckSufficientDataAndMarkInstructionStart(int pc)
+{
+	static constexpr EnumSet<InstructionType, uint64_t> COMBINE_PEND_CHECK_INSTRUCTIONS
+	{
+		InstructionType::AdvanceByte,
+		InstructionType::AnyByte,
+		InstructionType::Byte,
+		InstructionType::ByteEitherOf2,
+		InstructionType::ByteEitherOf3,
+		InstructionType::ByteRange,
+		InstructionType::ByteBitMask,
+		InstructionType::ByteNot,
+		InstructionType::ByteNotEitherOf2,
+		InstructionType::ByteNotEitherOf3,
+		InstructionType::ByteNotRange
+	};
+	
+	if(pc < checkPEndPc) return;
+	
+	if(pc == checkPEndPc)
+	{
+		» add p, {checkPStartPc - checkPEndPc}
+		checkPStartPc = -1;
+	}
+	
+	{
+		// context to make assembler macro work.
+		const AssemblerContext &context = *this;
+		
+		» markStartOfInstruction pc
+	}
+
+	if(!COMBINE_PEND_CHECK_INSTRUCTIONS.Contains(patternData[pc].type)) return;
+	
+	if(patternData[pc].type == InstructionType::AdvanceByte) return;
+
+	int pcEnd = pc+1;
+	while(patternData[pcEnd].isSingleReference
+		  && COMBINE_PEND_CHECK_INSTRUCTIONS.Contains(patternData[pcEnd].type)) ++pcEnd;
+	
+	if(pcEnd == pc+1)
+	{
+		if(header->IsFixedLength() && header->IsAnchored()) return;
+		» cmp p, pStop
+		» jbe *fail
+	}
+	else
+	{
+		checkPStartPc = pc;
+		checkPEndPc = pcEnd;
+
+		if(header->IsFixedLength() && header->IsAnchored()) return;
+		» lea rax, [pStop + {pcEnd-pc}]
+		» cmp p, rax
+		» jb *fail
+	}
+}
+
+int AssemblerContext::DataOffsetForPc(int pc)
+{
+	if(pc < checkPEndPc) return -(pc - checkPStartPc + 1);
+	else return -1;
+}
+
+
+AssemblerContext::RegistersToSave AssemblerContext::GetRegistersToSave() const
+{
+	RegistersToSave result;
+	if(type == PatternProcessorType::BackTracking
+	   && header->numberOfProgressChecks > 0)
+	{
+		result.needsStackFrame = true;
+	}
+	return result;
+}
+
+void AssemblerContext::EmitProlog() const
+{
+	if(!ShouldDirectBranchToStartingInstruction())
+	{
+		if(registersToSave.needsStackFrame)
+		{
+			» push rbp
+			» mov rbp, rsp
+		}
+
+		if(header->numberOfProgressChecks > 0)
+		{
+			for(int i = 0; i < header->numberOfProgressChecks; ++i)
+			{
+				// Push matchEnd repeatedly
+				» push r8
+			}
+		}
+	}
+}
+
+void AssemblerContext::EmitEpilog() const
+{
+	if(!ShouldDirectBranchToStartingInstruction())
+	{
+		if(header->numberOfProgressChecks > 0)
+		{
+			» add rsp, {8 * header->numberOfProgressChecks}
+		}
+
+		» pop rbp
+		» ret
+	}
+}
+
+//============================================================================
+
+static ReverseProcessor *CreateAmd64ReverseProcessor(const void* data, size_t length, PatternProcessorType type)
+{
+	const ByteCodeHeader* header = (const ByteCodeHeader*) data;
+	const int numberOfInstructions = header->numberOfReverseInstructions;
+	PatternData patternData(header->GetReverseProgram());
+
+	JASSERT(header->flags.alwaysRequiresCaptures == false);
+	
+	Assembler assembler;
+	AssemblerContext context(assembler, patternData, header, type);
+
+	void (*DeleteDestructor)(void*) = &SimpleJitMemoryManager::StaticInstanceRelease;
+
+	»   dq vtbl
+	» vtbl:
+	»   dq destructor, {DeleteDestructor}
+	»   dq *match, providesCaptures
+	» providesCaptures:
+	» .if {type == PatternProcessorType::OnePass}
+	»   mov eax, 1
+	» .else
+	»   xor eax, eax
+	» .endif
+	» destructor:
+	»   ret
+	» markStartOfInstruction TypeData<uint32_t>::Maximum()
+	» *fail:
+
+	switch(type)
+	{
+	case PatternProcessorType::OnePass:
+		»   xor eax, eax
+		»   ret
+		break;
+	case PatternProcessorType::BackTracking:
+		»   mov rax, pLeftMostMatch
+		»   ret
+		break;
+	default:
+		JUNREACHABLE;
+	}
+	
+	» *match:		// data, length, startOffset, matchEnd, **captures, matchIsAnchored
+
+	context.EmitProlog();
+	switch(type)
+	{
+	case PatternProcessorType::BackTracking:
+		if(context.needsStart)
+		{
+			» mov pStart, rsi
+		}
+		if(context.needsEnd)
+		{
+			» lea pEnd, [rsi + rdx]
+		}
+		» lea pStop, [rsi + rcx]
+		// » mov pLeftMostMatch, r8
+		» mov p, r8
+		» mov matchIsAnchored, byte ptr [rsp+{context.OffsetForReturnPointer() + 8}]
+		» startSearch header->reverseMatchStartingInstruction
+		break;
+	case PatternProcessorType::OnePass:
+		» lea pStop, [rsi + rcx]
+		» mov p, r8
+		» startSearch header->reverseMatchStartingInstruction
+		break;
+	default:
+		JUNREACHABLE;
+	}
+	context.EmitEpilog();
+
+	for(int pc = 0; pc < numberOfInstructions; ++pc)
+	{
+		context.CheckSufficientDataAndMarkInstructionStart(pc);
+
+		ByteCodeInstruction instruction = patternData[pc];
+		switch(instruction.type)
+		{
+		case InstructionType::AdvanceByte:
+			if(pc >= context.checkPEndPc)
+			{
+				int step = 1;
+				while(patternData[pc+1].type == InstructionType::AdvanceByte
+					  && patternData[pc+1].isSingleReference)
+				{
+					++step;
+					++pc;
+				}
+				» add p, {-step}
+			}
+			break;
+		case InstructionType::AnyByte:
+			» advanceP
+			break;
+		case InstructionType::AssertStartOfInput:
+			JASSERT(type == PatternProcessorType::BackTracking);
+			» cmp p, pStart
+			» jne *fail
+			break;
+		case InstructionType::AssertEndOfInput:
+			JASSERT(type == PatternProcessorType::BackTracking);
+			» cmp p, pEnd
+			» jne *fail
+			break;
+		case InstructionType::AssertWordBoundary:
+			// Set al = 1 if current position is a word char
+			// Set ah = 1 if previous position is a word char
+			JASSERT(type == PatternProcessorType::BackTracking);
+			»   mov scratch1_64, {PatternProcessorBase::WORD_MASK}
+			»   xor eax, eax
+			»   cmp p, pEnd
+			»   je pIsAtEnd
+			»   movzx scratch0_32, byte ptr [p]
+			»   mov al, [scratch1_64 + scratch0_64]
+			»  pIsAtEnd:
+			»   cmp p, pStart
+			»   je pIsAtStart
+			»   movzx scratch0_32, byte ptr [p - 1]
+			»   mov ah, [scratch1_64 + scratch0_64]
+			»  pIsAtStart:
+			»   cmp al, ah
+			»   je *fail
+			break;
+		case InstructionType::AssertNotWordBoundary:
+			// Set al = 1 if current position is a word char
+			// Set ah = 1 if previous position is a word char
+			JASSERT(type == PatternProcessorType::BackTracking);
+			»   mov scratch1_64, {PatternProcessorBase::WORD_MASK}
+			»   xor eax, eax
+			»   cmp p, pEnd
+			»   je pIsAtEnd
+			»   movzx scratch0_32, byte ptr [p]
+			»   mov al, [scratch1_64 + scratch0_64]
+			»  pIsAtEnd:
+			»   cmp p, pStart
+			»   je pIsAtStart
+			»   movzx scratch0_32, byte ptr [p - 1]
+			»   mov ah, [scratch1_64 + scratch0_64]
+			»  pIsAtStart:
+			»   cmp al, ah
+			»   jne *fail
+			break;
+		case InstructionType::AssertStartOfLine:
+			JASSERT(type == PatternProcessorType::BackTracking);
+			»   cmp p, pStart
+			»   je  next
+			»   cmp byte ptr [p - 1], '\n'
+			»   jne *fail
+			» next:
+			break;
+		case InstructionType::AssertEndOfLine:
+			JASSERT(type == PatternProcessorType::BackTracking);
+			»   cmp p, pEnd
+			»   je  next
+			»   cmp byte ptr [p], '\n'
+			»   jne *fail
+			» next:
+			break;
+		case InstructionType::AssertStartOfSearch:
+			JASSERT(type == PatternProcessorType::BackTracking);
+			» cmp p, pStop
+			» jne *fail
+			break;
+		case InstructionType::Byte:
+		case InstructionType::ByteEitherOf2:
+			{
+				enum class RepeatType
+				{
+					Byte,
+					ByteEitherOf2,
+				};
+				
+				int repeat = 1;
+				RepeatType repeatType = RepeatType::Byte;
+				while(pc+repeat < numberOfInstructions
+					  && patternData[pc+repeat].isSingleReference)
+				{
+					switch(patternData[pc+repeat].type)
+					{
+					case InstructionType::Byte:
+						++repeat;
+						continue;
+						
+					case InstructionType::ByteEitherOf2:
+						if(patternData[pc+repeat].IsEitherOf2AndBitMaskIdentifiable())
+						{
+							repeatType = RepeatType::ByteEitherOf2;
+							++repeat;
+							continue;
+						}
+						else if(repeat == 1)
+						{
+							repeatType = RepeatType::ByteEitherOf2;
+						}
+						break;
+
+					default:
+						break;
+					}
+					break;
+				}
+
+				int currentOffset = 0;
+				while(currentOffset < repeat)
+				{
+					uint32_t data = 0;
+					uint32_t mask = 0;
+					int bytes;
+					if(currentOffset+4 <= repeat) bytes = 4;
+					else if(currentOffset+2 <= repeat) bytes = 2;
+					else bytes = 1;
+					
+					for(int i = 0; i < bytes; ++i)
+					{
+						const ByteCodeInstruction &instr = patternData[pc+currentOffset+i];
+						switch(instr.type)
+						{
+						case InstructionType::Byte:
+							data |= instr.data << (8*i);
+							break;
+							
+						case InstructionType::ByteEitherOf2:
+							{
+								int valueA = instr.value      & 0xff;
+								int valueB = instr.value >> 8 & 0xff;
+								int xorValue = valueA ^ valueB;
+								data |= (valueA | xorValue) << (8*i);
+								mask |= xorValue << (8*i);
+							}
+							break;
+							
+						default:
+							JERROR("Unexpected");
+							JUNREACHABLE;
+						}
+					}
+					
+					if(mask == 0)
+					{
+						switch(bytes)
+						{
+						case 4:
+							» cmp dword ptr [rsi + {context.DataOffsetForPc(pc + currentOffset+3)}], {data}
+							» jne *fail
+							break;
+						case 2:
+							» cmp word ptr [rsi + {context.DataOffsetForPc(pc + currentOffset+1)}], {data}
+							» jne *fail
+							break;
+						case 1:
+							» cmp byte ptr [rsi + {context.DataOffsetForPc(pc + currentOffset)}], {data}
+							» jne *fail
+							break;
+						}
+					}
+					else
+					{
+						switch(bytes)
+						{
+						case 4:
+							» mov eax, [rsi + {context.DataOffsetForPc(pc + currentOffset+3)}]
+							» or eax, {mask}
+							» cmp eax, {data}
+							» jne *fail
+							break;
+						case 2:
+							» movzx eax, word ptr [rsi + {context.DataOffsetForPc(pc + currentOffset+1)}]
+							» or eax, {mask}
+							» cmp eax, {data}
+							» jne *fail
+							break;
+						case 1:
+							{
+								// This might be a single byte that is not bitmask comparable.
+								const ByteCodeInstruction &instruction = patternData[pc+currentOffset];
+								if(instruction.IsEitherOf2AndBitMaskIdentifiable())
+								{
+									» mov al, byte ptr [rsi + {context.DataOffsetForPc(pc + currentOffset)}]
+									» or al, {mask}
+									» cmp al, {data}
+									» jne *fail
+								}
+								else
+								{
+									uint8_t c0 = instruction.data & 0xff;
+									uint8_t c1 = instruction.data >> 8;
+
+									»  mov al, [p + {context.DataOffsetForPc(pc + currentOffset)}]
+									»  cmp al, {c0}
+									»  je ok
+									»  cmp al, {c1}
+									»  jne *fail
+									» ok:
+								}
+							}
+							break;
+						}
+					}
+					
+					currentOffset += bytes;
+				}
+				pc += repeat - 1;
+				if (pc >= context.checkPEndPc)
+				{
+					if(repeat == 1)
+					{
+						» dec p
+					}
+					else
+					{
+						» sub p, {repeat}
+					}
+				}
+			}
+			break;
+		case InstructionType::ByteEitherOf3:
+			{
+				uint8_t c0 = instruction.data & 0xff;
+				uint8_t c1 = instruction.data >> 8 & 0xff;
+				uint8_t c2 = instruction.data >> 16;
+				
+				if(BitUtility::IsPowerOf2(c1^c2)) Swap(c0, c2);
+				else if(BitUtility::IsPowerOf2(c0^c2)) Swap(c1, c2);
+				
+				if(BitUtility::IsPowerOf2(c0 ^ c1))
+				{
+					»  mov al, [p + readOffset]
+					»  advanceP
+					»  cmp al, {c2}
+					»  je ok
+					»  or al, {c0 ^ c1}
+					»  cmp al, {c0 | c1}
+					»  jne *fail
+					» ok:
+				}
+				else
+				{
+					»  mov al, [p + readOffset]
+					»  advanceP
+					»  cmp al, {c0}
+					»  je ok
+					»  cmp al, {c1}
+					»  je ok
+					»  cmp al, {c2}
+					»  jne *fail
+					» ok:
+				}
+			}
+			break;
+		case InstructionType::ByteRange:
+			{
+				unsigned char low = instruction.data & 0xff;
+				unsigned char high = (instruction.data >> 8) & 0xff;
+
+				» mov al, [p + readOffset]
+				» advanceP
+				» sub al, {low}
+				» cmp al, {high - low}
+				» ja *fail
+			}
+			break;
+		case InstructionType::ByteBitMask:
+			» lea scratch64, {pc+0x10000}f
+			» movzx eax, byte ptr [p + readOffset]
+			» advanceP
+			» cmp byte ptr [scratch64 + rax * 4], 0
+			» je *fail
+			break;
+		case InstructionType::ByteJumpTable:
+			{
+				»  lea scratch64, {0x10000+pc}f
+				» *1:
+				if(type != PatternProcessorType::OnePass)
+				{
+					»  cmp p, pStop
+					»  jbe *fail
+				}
+				»  movzx eax, byte ptr [p - 1]
+				»  dec p
+
+				const ByteCodeJumpTableData* data = patternData.GetData<ByteCodeJumpTableData>(instruction.data);
+				if(context.hasByteJumpToByteJump
+				   && patternData.HasLookupTableTarget(*data))
+				{
+					»  mov scratch64, [scratch64 + rax * 8]
+					»  test scratch64, (jumpTableAlignment-1)
+					»  jz *1b
+					»  jmp scratch64
+				}
+				else
+				{
+					» jmp [scratch64 + rax * 8]
+				}
+			}
+			break;
+		case InstructionType::ByteJumpMask:
+			{
+				const ByteCodeJumpMaskData* data = patternData.GetData<ByteCodeJumpMaskData>(instruction.data);
+
+				» lea scratch1_64, [{0x10000+pc}f]
+				» cmp p, pStop
+				» jbe *fail
+				» movzx scratch0_32, byte ptr [p - 1]
+				» advanceP
+				» cmp byte ptr [scratch1_64 + scratch0_64], 0
+				» je {data->pcData[0]}bf
+
+				if(data->pcData[1] != pc+1)
+				{
+					» jmp {data->pcData[1]}bf
+				}
+			}
+			break;
+		case InstructionType::ByteJumpRange:
+			{
+				const ByteCodeJumpRangeData* jumpRangeData = patternData.GetData<ByteCodeJumpRangeData>(instruction.data);
+
+				» cmp p, pStop
+				» jb *fail
+				» mov al, [p - 1]
+				» dec p
+
+				if(jumpRangeData->range.GetSize() == 0)
+				{
+					» cmp al, {jumpRangeData->range.min}
+					» jne {jumpRangeData->pcData[0]}bf
+				}
+				else
+				{
+					» sub al, {jumpRangeData->range.min}
+					» cmp al, {jumpRangeData->range.GetSize()}
+					» ja {jumpRangeData->pcData[0]}bf
+				}
+
+				if(jumpRangeData->pcData[1] != pc+1)
+				{
+					» jmp {jumpRangeData->pcData[1]}bf
+				}
+			}
+			break;
+		case InstructionType::ByteNot:
+			» cmp byte ptr [p + readOffset], {instruction.data}
+			» je *fail
+			» advanceP
+			break;
+		case InstructionType::ByteNotEitherOf2:
+			{
+				uint8_t c0 = instruction.data & 0xff;
+				uint8_t c1 = instruction.data >> 8;
+
+				if(BitUtility::IsPowerOf2(c0 ^ c1))
+				{
+					»  mov al, [p + readOffset]
+					»  advanceP
+					»  or al, {c0 ^ c1}
+					»  cmp al, {c0 | c1}
+					»  je *fail
+				}
+				else
+				{
+					»  mov al, [p + readOffset]
+					»  advanceP
+					»  cmp al, {c0}
+					»  je *fail
+					»  cmp al, {c1}
+					»  je *fail
+				}
+			}
+			break;
+		case InstructionType::ByteNotEitherOf3:
+			{
+				uint8_t c0 = instruction.data & 0xff;
+				uint8_t c1 = instruction.data >> 8 & 0xff;
+				uint8_t c2 = instruction.data >> 16;
+				
+				if(BitUtility::IsPowerOf2(c1^c2)) Swap(c0, c2);
+				else if(BitUtility::IsPowerOf2(c0^c2)) Swap(c1, c2);
+				
+				if(BitUtility::IsPowerOf2(c0 ^ c1))
+				{
+					»  mov al, [p + readOffset]
+					»  advanceP
+					»  cmp al, {c2}
+					»  je *fail
+					»  or al, {c0 ^ c1}
+					»  cmp al, {c0 | c1}
+					»  je *fail
+				}
+				else
+				{
+					»  mov al, [p + readOffset]
+					»  advanceP
+					»  cmp al, {c0}
+					»  je *fail
+					»  cmp al, {c1}
+					»  je *fail
+					»  cmp al, {c2}
+					»  je *fail
+				}
+			}
+			break;
+		case InstructionType::ByteNotRange:
+			{
+				unsigned char low = instruction.data & 0xff;
+				unsigned char high = (instruction.data >> 8) & 0xff;
+				
+				» mov al, [p + readOffset]
+				» advanceP
+				» sub al, {low}
+				» cmp al, {high - low}
+				» jbe *fail
+			}
+			break;
+		case InstructionType::FindByte:
+			{
+				if(type != PatternProcessorType::OnePass)
+				{
+					» cmp p, pStop
+					» jbe *fail
+				}
+
+				uint32_t c = instruction.data & 0xff;
+				uint32_t nextPc = instruction.data>>8;
+
+				// rsi = search
+				// rdx = stop
+				// xmm0 = bytes to search for
+				»  dec p
+				»  mov eax, {c * 0x1010101}
+				»  movd xmm0, eax
+				»  call [addr]
+				»  mov rsi, rax
+				»  test rax, rax
+				»  jnz {nextPc}bf
+				»  jmp *fail
+				» addr dq {&Amd64FindMethods::InternalFindByteReverse}
+			}
+			break;
+		case InstructionType::DispatchTable:
+			{
+				const ByteCodeJumpTableData* data = patternData.GetData<ByteCodeJumpTableData>(instruction.data);
+
+				» lea scratch1_64, [{0x10000+pc}f]
+				» cmp p, pStop
+				» jbe {data->pcData[0]}bf
+				» movzx scratch0_32, byte ptr [p - 1]
+				» jmp [scratch1_64 + scratch0_64 * 8]
+			}
+			break;
+		case InstructionType::DispatchMask:
+			{
+				const ByteCodeJumpMaskData* data = patternData.GetData<ByteCodeJumpMaskData>(instruction.data);
+
+				» lea scratch64, {0x10000+pc}f
+				» cmp p, pStop
+				» jbe {data->pcData[0]}bf
+				» movzx eax, byte ptr [p - 1]
+				» cmp byte ptr [scratch64 + rax], 0
+				
+				if(data->pcData[0] == pc+1)
+				{
+					» jne {data->pcData[1]}bf
+				}
+				else if(data->pcData[1] == pc+1)
+				{
+					» je {data->pcData[0]}bf
+				}
+				else
+				{
+					» je {data->pcData[0]}bf
+					» jmp {data->pcData[1]}bf
+				}
+			}
+			break;
+		case InstructionType::DispatchRange:
+			{
+				const ByteCodeJumpRangeData* jumpRangeData = patternData.GetData<ByteCodeJumpRangeData>(instruction.data);
+
+				» cmp p, pStop
+				» jbe {jumpRangeData->pcData[0]}bf
+				» mov al, [p - 1]
+
+				if(jumpRangeData->range.GetSize() == 0)
+				{
+					» cmp al, {jumpRangeData->range.min}
+
+					if(jumpRangeData->pcData[0] == pc + 1)
+					{
+						» je {jumpRangeData->pcData[1]}bf
+					}
+					else
+					{
+						» jne {jumpRangeData->pcData[0]}bf
+						if(jumpRangeData->pcData[1] != pc + 1)
+						{
+							» jmp {jumpRangeData->pcData[1]}bf
+						}
+					}
+				}
+				else
+				{
+					» sub al, {jumpRangeData->range.min}
+					» cmp al, {jumpRangeData->range.GetSize()}
+
+					if(jumpRangeData->pcData[0] == pc + 1)
+					{
+						» jbe {jumpRangeData->pcData[1]}bf
+					}
+					else
+					{
+						» ja {jumpRangeData->pcData[0]}bf
+
+						if(jumpRangeData->pcData[1] != pc+1)
+						{
+							» jmp {jumpRangeData->pcData[1]}bf
+						}
+					}
+				}
+			}
+			break;
+		case InstructionType::Jump:
+			» jmp {instruction.data}bf
+			break;
+		case InstructionType::Match:
+			switch(type)
+			{
+			case PatternProcessorType::OnePass:
+				» xor eax, eax
+				» ret
+				break;
+			case PatternProcessorType::BackTracking:
+				»  cmp p, pLeftMostMatch
+				»  jae returnLeftMost
+				»  test matchIsAnchored, matchIsAnchored
+				»  cmove pLeftMostMatch, p
+				»  cmp p, pStop
+				»  cmove pLeftMostMatch, p
+				» returnLeftMost:
+				»  mov rax, pLeftMostMatch
+				»  ret
+				break;
+			default:
+				JUNREACHABLE;
+			}
+			break;
+		case InstructionType::Save:
+		case InstructionType::SaveNoRecurse:
+			if(type == PatternProcessorType::OnePass)
+			{
+				int32_t saveOffset = instruction.data >> 8;
+				int32_t saveIndex = (instruction.data & 0xff) * 8;
+
+				if(saveOffset == 0)
+				{
+					» mov [pCaptures + {saveIndex}], p
+				}
+				else if(pc > 0
+						&& patternData[pc-1].IsSave()
+						&& (patternData[pc-1].data >> 8) == saveOffset)
+				{
+					» mov [pCaptures + {saveIndex}], rax
+				}
+				else
+				{
+					» lea rax, [p + {saveOffset}]
+					» mov [pCaptures + {saveIndex}], rax
+				}
+			}
+			break;
+		case InstructionType::Fail:
+			» mov rax, pLeftMostMatch
+			» ret
+			break;
+		case InstructionType::ProgressCheck:
+			{
+				int progressCheckOffset = context.OffsetForProgressCheck(instruction.data);
+				»  mov scratch64, [pProgressCheckBase + {progressCheckOffset}]
+				»  cmp scratch64, p
+				»  jbe done
+				»  mov [pProgressCheckBase + {progressCheckOffset}], p
+				»  push scratch64
+				»  call next
+				»  pop scratch64
+				»  mov [pProgressCheckBase + {progressCheckOffset}], scratch64
+				» done:
+				»  mov rax, pLeftMostMatch
+				»  ret
+				» next:
+			}
+			break;
+		case InstructionType::Split:
+			JASSERT(type == PatternProcessorType::BackTracking);
+			{
+				const ByteCodeSplitData* split = patternData.GetData<ByteCodeSplitData>(instruction.data);
+				uint32_t numberOfTargets = split->numberOfTargets;
+				for(size_t i = 0; i < numberOfTargets-1; ++i)
+				{
+					» push p
+					» call {split->targetList[i]}bf
+					» pop p
+				}
+				» jmp {split->targetList[numberOfTargets-1]}bf
+			}
+			break;
+
+		case InstructionType::SplitNextN: // Both paths need to be explored, so these are the same.
+		case InstructionType::SplitNNext:
+			JASSERT(type == PatternProcessorType::BackTracking);
+			if(patternData.IsSingleByteConsumerFromPcToPc(instruction.data, pc))
+			{
+				// For a common case, where the split lands on an instruction that returns
+				// to the split, convert the call to updating an iteration range.
+				// This changes a common case from requiring O(N) space to O(1).
+				»  lea rax, [returnAddress]
+				»  cmp rax, [rsp]
+				»  jne doCall
+				»  lea scratch64, [p + 1]
+				»  cmp scratch64, [rsp + 8]	// startIterate
+				»  jne doCall
+				»  mov [rsp + 8], p
+				»  jmp {instruction.data}bf
+				» doCall:
+				»  push p					// endIterate
+				»  push p					// startIterate
+				»  call {instruction.data}bf
+				» returnAddress:
+				»  pop p
+				»  pop scratch64
+				»  cmp p, scratch64
+				»  je next
+				»  push pEndRepeat
+				»  mov pEndRepeat, scratch64
+				» repeat:
+				»  push p
+				»  call next
+				»  pop p
+				»  inc p
+				»  cmp p, pEndRepeat
+				»  jb repeat
+				»  pop pEndRepeat
+				» next:
+			}
+			else
+			{
+				»  push p
+				»  call {instruction.data}bf
+				»  pop p
+			}
+			break;
+		case InstructionType::SplitNextMatchN:
+			JASSERT(type == PatternProcessorType::BackTracking);
+			» cmp p, pLeftMostMatch
+			» jae {instruction.data}bf
+			» test matchIsAnchored, matchIsAnchored
+			» cmove pLeftMostMatch, p
+			» cmp p, pStop
+			» cmove pLeftMostMatch, p
+			» jmp {instruction.data}bf
+			break;
+		case InstructionType::SplitNMatchNext:
+			JASSERT(type == PatternProcessorType::BackTracking);
+			»  cmp p, pLeftMostMatch
+			»  jae next
+			»  test matchIsAnchored, matchIsAnchored
+			»  cmove pLeftMostMatch, p
+			»  cmp p, pStop
+			»  cmove pLeftMostMatch, p
+			» next:
+			break;
+		case InstructionType::SplitMatch:
+			JASSERT(type == PatternProcessorType::BackTracking);
+			{
+				const uint32_t* splitData = patternData.GetData<uint32_t>(instruction.data);
+				» cmp p, pLeftMostMatch
+				» jae {splitData[1]}bf
+				» test matchIsAnchored, matchIsAnchored
+				» cmove pLeftMostMatch, p
+				» cmp p, pStop
+				» cmove pLeftMostMatch, p
+				» jmp {splitData[1]}bf
+			}
+			break;
+		case InstructionType::AssertRecurseValue:
+		case InstructionType::BackReference:
+		case InstructionType::Call:
+		case InstructionType::Possess:
+		case InstructionType::PropagateBackwards:
+		case InstructionType::Recurse:
+		case InstructionType::ReturnIfRecurseValue:
+		case InstructionType::SearchByte:
+		case InstructionType::SearchByteEitherOf2:
+		case InstructionType::SearchByteEitherOf3:
+		case InstructionType::SearchByteEitherOf4:
+		case InstructionType::SearchByteEitherOf5:
+		case InstructionType::SearchByteEitherOf6:
+		case InstructionType::SearchByteEitherOf7:
+		case InstructionType::SearchByteEitherOf8:
+		case InstructionType::SearchBytePair:
+		case InstructionType::SearchBytePair2:
+		case InstructionType::SearchBytePair3:
+		case InstructionType::SearchBytePair4:
+		case InstructionType::SearchByteRange:
+		case InstructionType::SearchByteRangePair:
+		case InstructionType::SearchBoyerMoore:
+		case InstructionType::SearchShiftOr:
+		case InstructionType::SearchByteTriplet:
+		case InstructionType::SearchByteTriplet2:
+		case InstructionType::StepBack:
+		case InstructionType::Success:
+			JERROR("Unexpected instruction");
+		default:
+			» int3
+			break;
+		}
+	}
+
+	if(context.hasByteJumpToByteJump)
+	{
+		» .align jumpTableAlignment
+	}
+
+	for(int pc = 0; pc < numberOfInstructions; ++pc)
+	{
+		ByteCodeInstruction instruction = patternData[pc];
+		switch(instruction.type)
+		{
+		case InstructionType::ByteBitMask:
+		case InstructionType::PropagateBackwards:
+			{
+				» {0x10000+pc}:
+				uint8_t *data = (uint8_t*) assembler.AppendData(256);
+				const StaticBitTable<256>& bitTable = *patternData.GetData<StaticBitTable<256>>(instruction.data);
+				for(int c = 0; c < 256; ++c)
+				{
+					data[c] = bitTable[c];
+				}
+			}
+			break;
+		case InstructionType::ByteJumpMask:
+		case InstructionType::DispatchMask:
+			{
+				const ByteCodeJumpMaskData* maskData = patternData.GetData<ByteCodeJumpMaskData>(instruction.data);
+
+				» {0x10000+pc}:
+				uint8_t *data = (uint8_t*) assembler.AppendData(256);
+				for(int c = 0; c < 256; ++c)
+				{
+					data[c] = maskData->bitMask[c];
+				}
+			}
+			break;
+		case InstructionType::ByteJumpTable:
+			{
+				const ByteCodeJumpTableData* data = patternData.GetData<ByteCodeJumpTableData>(instruction.data);
+
+				» {0x10000+pc}:
+				for(int i = 0; i < 256; ++i)
+				{
+					uint32_t targetPc = data->pcData[data->jumpTable[i]];
+					if(targetPc < numberOfInstructions
+							&& patternData[targetPc].type == InstructionType::ByteJumpTable)
+					{
+						» dq {0x10000+targetPc}bf
+					}
+					else
+					{
+						» dq {targetPc}b
+					}
+				}
+			}
+			break;
+		case InstructionType::DispatchTable:
+			{
+				const ByteCodeJumpTableData* data = patternData.GetData<ByteCodeJumpTableData>(instruction.data);
+
+				» {0x10000+pc}:
+				for(int i = 0; i < 256; ++i)
+				{
+					uint32_t targetPc = data->pcData[data->jumpTable[i]];
+					» dq {targetPc}b
+				}
+			}
+			break;
+		default:
+			break;
+		}
+	}
+	
+	return (ReverseProcessor*) assembler.Build();
+}
+
+//============================================================================
+
+ReverseProcessor* ReverseProcessor::CreateOnePassReverseProcessor(const void* data, size_t length)
+{
+	return CreateAmd64ReverseProcessor(data, length, PatternProcessorType::OnePass);
+}
+
+ReverseProcessor* ReverseProcessor::CreateBackTrackingReverseProcessor(const void* data, size_t length)
+{
+	return CreateAmd64ReverseProcessor(data, length, PatternProcessorType::BackTracking);
+}
+
+//============================================================================
+#endif // PATTERN_USE_JIT && defined(JABI_AMD64_SYSTEM_V)
+//============================================================================

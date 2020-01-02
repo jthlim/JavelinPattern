@@ -214,7 +214,7 @@ Labels come in several varieties:
 | Numeric global    | `*1:`         | `*1b`, `*1f`, `*1bf` (backwards, or else forwards) |
 | Expression global | `{`_expr_`}:` | `{`_expr_`}b`, `{`_expr_`}f`,  `{`_expr_`}bf`      |
 
-Local variables need to resolve within the block being processed.
+Local labels need to resolve within the block being processed.
 
 Label types are namespaced, and can only be used to reference the type it was declared with. Specifically, expressions _cannot_ reference numeric local or numeric global labels.
 
@@ -287,6 +287,8 @@ Expressions can be used as conditions on all architectures, e.g.:
 There are extra `<cond>` available per architecture detailed below too.
 
 ### Preprocessor
+
+* `.include` _filename_
 
 * `.define` _keyword_ _expansion_
 

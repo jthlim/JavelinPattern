@@ -1,0 +1,20 @@
+// mov64 will try and use adr, adrp and then a series of mov instructions
+» .macro mov64 D, V
+» .if adr{V}
+»   adr D, {V}
+» .elseif adrp{V}
+»   adrp D, {V}
+»   add D, D, {V}[11:0]
+» .else
+»   movz D, #{V}[15:0]
+»   .if {uint64_t(V) & 0xffff0000}
+»     movk D, #{V}[31:16], lsl #16
+»   .endif
+»   .if {uint64_t(V) & 0xffff00000000}
+»      movk D, #{V}[47:32], lsl #32
+»   .endif
+»   .if {uint64_t(V) & 0xffff000000000000}
+»      movk D, #{V}[63:48], lsl #48
+»   .endif
+» .endif
+» .endm

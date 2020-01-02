@@ -1,0 +1,30 @@
+#include "Javelin/Assembler/Assembler.h"
+#include <stdio.h>
+
+static int (*CreateTest(int returnValue))()
+{
+  Javelin::Assembler assembler(Javelin::SimpleJitMemoryManager::GetInstance());
+
+#if defined(__amd64__)
+  » .x64
+  » mov eax, {returnValue}
+  » ret
+#elif defined(__arm64__)
+  » .arm64
+  » mov w0, #{returnValue}
+  » ret
+#else
+  #error "Unsupported runtime"
+#endif
+  return (int (*)()) assembler.Build();
+}
+
+int main()
+{
+  int (*test)() = CreateTest(123);
+  printf("Result: %d\n", test());
+  Javelin::SimpleJitMemoryManager::StaticInstanceRelease((void*) test);
+
+  return 0;
+}
+
