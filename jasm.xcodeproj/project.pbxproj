@@ -7,15 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8322C01723BF6CB600715F3E /* Assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFBF23BF6CB600715F3E /* Assembler.cpp */; };
-		8322C01823BF6CB600715F3E /* JitForwardReferenceMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC223BF6CB600715F3E /* JitForwardReferenceMap.cpp */; };
-		8322C01923BF6CB600715F3E /* JitMemoryManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC323BF6CB600715F3E /* JitMemoryManager.cpp */; };
-		8322C01A23BF6CB600715F3E /* JitLabelOffsetQueue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC723BF6CB600715F3E /* JitLabelOffsetQueue.cpp */; };
-		8322C01B23BF6CB600715F3E /* JitVector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC823BF6CB600715F3E /* JitVector.cpp */; };
-		8322C01C23BF6CB600715F3E /* JitLabelId.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC923BF6CB600715F3E /* JitLabelId.cpp */; };
-		8322C01D23BF6CB600715F3E /* JitLabelMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFCC23BF6CB600715F3E /* JitLabelMap.cpp */; };
 		8322C01E23BF6CB600715F3E /* ActionType.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFCF23BF6CB600715F3E /* ActionType.cpp */; };
-		8322C01F23BF6CB600715F3E /* Assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFD023BF6CB600715F3E /* Assembler.cpp */; };
 		8322C02023BF6CB600715F3E /* Log.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFD623BF6CB600715F3E /* Log.cpp */; };
 		8322C02123BF6CB600715F3E /* Preprocessor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFD723BF6CB600715F3E /* Preprocessor.cpp */; };
 		8322C02223BF6CB600715F3E /* AssemblerException.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFD823BF6CB600715F3E /* AssemblerException.cpp */; };
@@ -42,7 +34,134 @@
 		8322C03723BF6CB600715F3E /* Action.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322C01323BF6CB600715F3E /* Action.cpp */; };
 		8322C03823BF6CB600715F3E /* Encoder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322C01423BF6CB600715F3E /* Encoder.cpp */; };
 		8322C03923BF6CB600715F3E /* Token.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322C01523BF6CB600715F3E /* Token.cpp */; };
+		837E3CAF23BF6F21006148DD /* bf.cpp.jasm in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFF023BF6CB600715F3E /* bf.cpp.jasm */; };
+		837E3CB423BF6FE6006148DD /* Assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFBF23BF6CB600715F3E /* Assembler.cpp */; };
+		837E3CB523BF6FF8006148DD /* JitForwardReferenceMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC223BF6CB600715F3E /* JitForwardReferenceMap.cpp */; };
+		837E3CB623BF6FF8006148DD /* JitLabelId.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC923BF6CB600715F3E /* JitLabelId.cpp */; };
+		837E3CB723BF6FF8006148DD /* JitLabelMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFCC23BF6CB600715F3E /* JitLabelMap.cpp */; };
+		837E3CB823BF6FF8006148DD /* JitLabelOffsetQueue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC723BF6CB600715F3E /* JitLabelOffsetQueue.cpp */; };
+		837E3CB923BF6FF8006148DD /* JitMemoryManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC323BF6CB600715F3E /* JitMemoryManager.cpp */; };
+		837E3CBA23BF6FF8006148DD /* JitVector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC823BF6CB600715F3E /* JitVector.cpp */; };
+		837E3CBB23BF701F006148DD /* JitLabelMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFCC23BF6CB600715F3E /* JitLabelMap.cpp */; };
+		837E3CBC23BF7042006148DD /* JitLabelId.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC923BF6CB600715F3E /* JitLabelId.cpp */; };
+		837E3CBD23BF7073006148DD /* mandelbrot.bf in CopyFiles */ = {isa = PBXBuildFile; fileRef = 8322BFEE23BF6CB600715F3E /* mandelbrot.bf */; };
+		837E3CC223BF7113006148DD /* JitMemoryManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC323BF6CB600715F3E /* JitMemoryManager.cpp */; };
+		837E3CC323BF7113006148DD /* JitForwardReferenceMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC223BF6CB600715F3E /* JitForwardReferenceMap.cpp */; };
+		837E3CC423BF7113006148DD /* JitVector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC823BF6CB600715F3E /* JitVector.cpp */; };
+		837E3CC523BF7113006148DD /* JitLabelMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFCC23BF6CB600715F3E /* JitLabelMap.cpp */; };
+		837E3CC723BF7113006148DD /* JitLabelOffsetQueue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC723BF6CB600715F3E /* JitLabelOffsetQueue.cpp */; };
+		837E3CC823BF7113006148DD /* Assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFBF23BF6CB600715F3E /* Assembler.cpp */; };
+		837E3CC923BF7113006148DD /* JitLabelId.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC923BF6CB600715F3E /* JitLabelId.cpp */; };
+		837E3CCC23BF7113006148DD /* mandelbrot.bf in CopyFiles */ = {isa = PBXBuildFile; fileRef = 8322BFEE23BF6CB600715F3E /* mandelbrot.bf */; };
+		837E3CD223BF712D006148DD /* basic.cpp.jasm in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFF123BF6CB600715F3E /* basic.cpp.jasm */; };
+		837E3CF223BF71E4006148DD /* basic.cpp.jasm in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFF123BF6CB600715F3E /* basic.cpp.jasm */; };
+		837E3CF423BF73D1006148DD /* ActionType.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFCF23BF6CB600715F3E /* ActionType.cpp */; };
+		837E3CF523BF73D1006148DD /* Assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFD023BF6CB600715F3E /* Assembler.cpp */; };
+		837E3CF623BF73D1006148DD /* JitForwardReferenceMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC223BF6CB600715F3E /* JitForwardReferenceMap.cpp */; };
+		837E3CF723BF73D1006148DD /* JitLabelId.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC923BF6CB600715F3E /* JitLabelId.cpp */; };
+		837E3CF823BF73D1006148DD /* JitLabelMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFCC23BF6CB600715F3E /* JitLabelMap.cpp */; };
+		837E3CF923BF73D1006148DD /* JitLabelOffsetQueue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC723BF6CB600715F3E /* JitLabelOffsetQueue.cpp */; };
+		837E3CFA23BF73D1006148DD /* JitMemoryManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC323BF6CB600715F3E /* JitMemoryManager.cpp */; };
+		837E3CFB23BF73D1006148DD /* JitVector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC823BF6CB600715F3E /* JitVector.cpp */; };
+		837E3D1923BF74C1006148DD /* Assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFBF23BF6CB600715F3E /* Assembler.cpp */; };
+		837E3D1E23BF7693006148DD /* JitMemoryManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC323BF6CB600715F3E /* JitMemoryManager.cpp */; };
+		837E3D1F23BF7693006148DD /* JitForwardReferenceMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC223BF6CB600715F3E /* JitForwardReferenceMap.cpp */; };
+		837E3D2023BF7693006148DD /* JitVector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC823BF6CB600715F3E /* JitVector.cpp */; };
+		837E3D2123BF7693006148DD /* JitLabelMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFCC23BF6CB600715F3E /* JitLabelMap.cpp */; };
+		837E3D2223BF7693006148DD /* Assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFBF23BF6CB600715F3E /* Assembler.cpp */; };
+		837E3D2423BF7693006148DD /* ActionType.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFCF23BF6CB600715F3E /* ActionType.cpp */; };
+		837E3D2523BF7693006148DD /* JitLabelOffsetQueue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC723BF6CB600715F3E /* JitLabelOffsetQueue.cpp */; };
+		837E3D2623BF7693006148DD /* Assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFD023BF6CB600715F3E /* Assembler.cpp */; };
+		837E3D2723BF7693006148DD /* JitLabelId.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC923BF6CB600715F3E /* JitLabelId.cpp */; };
+		837E3D3123BF76E4006148DD /* mandelbrot.bf in Resources */ = {isa = PBXBuildFile; fileRef = 8322BFEE23BF6CB600715F3E /* mandelbrot.bf */; };
+		837E3D3223BF76F2006148DD /* bf.cpp.jasm in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFF323BF6CB600715F3E /* bf.cpp.jasm */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXBuildRule section */
+		837E3CB123BF6F46006148DD /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.jasm";
+			fileType = pattern.proxy;
+			inputFiles = (
+			);
+			isEditable = 1;
+			outputFiles = (
+				"$(DERIVED_FILES_DIR)/${arch}/${INPUT_FILE_BASE}",
+			);
+			script = "\"${BUILT_PRODUCTS_DIR}/jasm\" -$arch -f \"${INPUT_FILE_PATH}\" -o \"${DERIVED_FILE_DIR}/${arch}/${INPUT_FILE_BASE}\" -O\n";
+		};
+		837E3CCD23BF7113006148DD /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.jasm";
+			fileType = pattern.proxy;
+			inputFiles = (
+			);
+			isEditable = 1;
+			outputFiles = (
+				"$(DERIVED_FILES_DIR)/${arch}/${INPUT_FILE_BASE}",
+			);
+			script = "\"${BUILT_PRODUCTS_DIR}/jasm\" -$arch -f \"${INPUT_FILE_PATH}\" -o \"${DERIVED_FILE_DIR}/${arch}/${INPUT_FILE_BASE}\" -O\n";
+		};
+		837E3CF323BF72D6006148DD /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.jasm";
+			fileType = pattern.proxy;
+			inputFiles = (
+			);
+			isEditable = 1;
+			outputFiles = (
+				"$(DERIVED_FILES_DIR)/${arch}/${INPUT_FILE_BASE}",
+			);
+			script = "\"${BUILT_PRODUCTS_DIR}/../${CONFIGURATION}/jasm\" -arm64 -f \"${INPUT_FILE_PATH}\" -o \"${DERIVED_FILE_DIR}/${arch}/${INPUT_FILE_BASE}\" -O\n";
+		};
+		837E3D2A23BF7693006148DD /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.jasm";
+			fileType = pattern.proxy;
+			inputFiles = (
+			);
+			isEditable = 1;
+			outputFiles = (
+				"$(DERIVED_FILES_DIR)/${arch}/${INPUT_FILE_BASE}",
+			);
+			script = "\"${BUILT_PRODUCTS_DIR}/../${CONFIGURATION}/jasm\" -arm64 -f \"${INPUT_FILE_PATH}\" -o \"${DERIVED_FILE_DIR}/${arch}/${INPUT_FILE_BASE}\" -O\n";
+		};
+/* End PBXBuildRule section */
+
+/* Begin PBXContainerItemProxy section */
+		837E3CB223BF6F72006148DD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8322BFA823BF6C7200715F3E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8322BFAF23BF6C7200715F3E;
+			remoteInfo = jasm;
+		};
+		837E3CC023BF7113006148DD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8322BFA823BF6C7200715F3E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8322BFAF23BF6C7200715F3E;
+			remoteInfo = jasm;
+		};
+		837E3CF023BF71C6006148DD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8322BFA823BF6C7200715F3E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8322BFAF23BF6C7200715F3E;
+			remoteInfo = jasm;
+		};
+		837E3D1C23BF7693006148DD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8322BFA823BF6C7200715F3E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8322BFAF23BF6C7200715F3E;
+			remoteInfo = jasm;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		8322BFAE23BF6C7200715F3E /* CopyFiles */ = {
@@ -53,6 +172,26 @@
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 1;
+		};
+		837E3CA623BF6F0E006148DD /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 12;
+			dstPath = "";
+			dstSubfolderSpec = 16;
+			files = (
+				837E3CBD23BF7073006148DD /* mandelbrot.bf in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		837E3CCB23BF7113006148DD /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 12;
+			dstPath = "";
+			dstSubfolderSpec = 16;
+			files = (
+				837E3CCC23BF7113006148DD /* mandelbrot.bf in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
@@ -141,10 +280,43 @@
 		8322C01423BF6CB600715F3E /* Encoder.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Encoder.cpp; sourceTree = "<group>"; };
 		8322C01523BF6CB600715F3E /* Token.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Token.cpp; sourceTree = "<group>"; };
 		8322C01623BF6CB600715F3E /* Preprocessor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Preprocessor.h; sourceTree = "<group>"; };
+		837E3CA823BF6F0E006148DD /* macOS brainf*ck example */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "macOS brainf*ck example"; sourceTree = BUILT_PRODUCTS_DIR; };
+		837E3CD123BF7113006148DD /* macOS basic example */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "macOS basic example"; sourceTree = BUILT_PRODUCTS_DIR; };
+		837E3CD723BF71B5006148DD /* iOS basic example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "iOS basic example.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		837E3D1323BF744C006148DD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		837E3D2E23BF7693006148DD /* iOS brainf*ck example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "iOS brainf*ck example.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		8322BFAD23BF6C7200715F3E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		837E3CA523BF6F0E006148DD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		837E3CCA23BF7113006148DD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		837E3CD423BF71B5006148DD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		837E3D2823BF7693006148DD /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -157,7 +329,7 @@
 		8322BFA723BF6C7200715F3E = {
 			isa = PBXGroup;
 			children = (
-				8322BFB223BF6C7200715F3E /* jasm */,
+				8322BFB223BF6C7200715F3E /* Javelin */,
 				8322BFB123BF6C7200715F3E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -166,17 +338,21 @@
 			isa = PBXGroup;
 			children = (
 				8322BFB023BF6C7200715F3E /* jasm */,
+				837E3CA823BF6F0E006148DD /* macOS brainf*ck example */,
+				837E3CD123BF7113006148DD /* macOS basic example */,
+				837E3CD723BF71B5006148DD /* iOS basic example.app */,
+				837E3D2E23BF7693006148DD /* iOS brainf*ck example.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		8322BFB223BF6C7200715F3E /* jasm */ = {
+		8322BFB223BF6C7200715F3E /* Javelin */ = {
 			isa = PBXGroup;
 			children = (
 				8322BFBA23BF6CB600715F3E /* Assembler */,
 				8322BFD323BF6CB600715F3E /* Tools */,
 			);
-			path = jasm;
+			path = Javelin;
 			sourceTree = "<group>";
 		};
 		8322BFBA23BF6CB600715F3E /* Assembler */ = {
@@ -198,9 +374,8 @@
 				8322BFC823BF6CB600715F3E /* JitVector.cpp */,
 				8322BFCB23BF6CB600715F3E /* JitVector.h */,
 			);
-			name = Assembler;
-			path = Javelin/Assembler;
-			sourceTree = SOURCE_ROOT;
+			path = Assembler;
+			sourceTree = "<group>";
 		};
 		8322BFBD23BF6CB600715F3E /* x64 */ = {
 			isa = PBXGroup;
@@ -293,10 +468,11 @@
 		8322BFED23BF6CB600715F3E /* example */ = {
 			isa = PBXGroup;
 			children = (
-				8322BFEE23BF6CB600715F3E /* mandelbrot.bf */,
-				8322BFEF23BF6CB600715F3E /* x64 */,
-				8322BFF123BF6CB600715F3E /* basic.cpp.jasm */,
+				837E3D1323BF744C006148DD /* Info.plist */,
 				8322BFF223BF6CB600715F3E /* arm64 */,
+				8322BFEF23BF6CB600715F3E /* x64 */,
+				8322BFEE23BF6CB600715F3E /* mandelbrot.bf */,
+				8322BFF123BF6CB600715F3E /* basic.cpp.jasm */,
 			);
 			path = example;
 			sourceTree = "<group>";
@@ -362,6 +538,82 @@
 			productReference = 8322BFB023BF6C7200715F3E /* jasm */;
 			productType = "com.apple.product-type.tool";
 		};
+		837E3CA723BF6F0E006148DD /* macOS brainf*ck example */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 837E3CAC23BF6F0E006148DD /* Build configuration list for PBXNativeTarget "macOS brainf*ck example" */;
+			buildPhases = (
+				837E3CA423BF6F0E006148DD /* Sources */,
+				837E3CA523BF6F0E006148DD /* Frameworks */,
+				837E3CA623BF6F0E006148DD /* CopyFiles */,
+			);
+			buildRules = (
+				837E3CB123BF6F46006148DD /* PBXBuildRule */,
+			);
+			dependencies = (
+				837E3CB323BF6F72006148DD /* PBXTargetDependency */,
+			);
+			name = "macOS brainf*ck example";
+			productName = "macOS x64 bf example";
+			productReference = 837E3CA823BF6F0E006148DD /* macOS brainf*ck example */;
+			productType = "com.apple.product-type.tool";
+		};
+		837E3CBE23BF7113006148DD /* macOS basic example */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 837E3CCE23BF7113006148DD /* Build configuration list for PBXNativeTarget "macOS basic example" */;
+			buildPhases = (
+				837E3CC123BF7113006148DD /* Sources */,
+				837E3CCA23BF7113006148DD /* Frameworks */,
+				837E3CCB23BF7113006148DD /* CopyFiles */,
+			);
+			buildRules = (
+				837E3CCD23BF7113006148DD /* PBXBuildRule */,
+			);
+			dependencies = (
+				837E3CBF23BF7113006148DD /* PBXTargetDependency */,
+			);
+			name = "macOS basic example";
+			productName = "macOS x64 bf example";
+			productReference = 837E3CD123BF7113006148DD /* macOS basic example */;
+			productType = "com.apple.product-type.tool";
+		};
+		837E3CD623BF71B5006148DD /* iOS basic example */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 837E3CED23BF71B8006148DD /* Build configuration list for PBXNativeTarget "iOS basic example" */;
+			buildPhases = (
+				837E3CD323BF71B5006148DD /* Sources */,
+				837E3CD423BF71B5006148DD /* Frameworks */,
+				837E3CD523BF71B5006148DD /* Resources */,
+			);
+			buildRules = (
+				837E3CF323BF72D6006148DD /* PBXBuildRule */,
+			);
+			dependencies = (
+				837E3CF123BF71C6006148DD /* PBXTargetDependency */,
+			);
+			name = "iOS basic example";
+			productName = "iOS arm64 basic example";
+			productReference = 837E3CD723BF71B5006148DD /* iOS basic example.app */;
+			productType = "com.apple.product-type.application";
+		};
+		837E3D1A23BF7693006148DD /* iOS brainf*ck example */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 837E3D2B23BF7693006148DD /* Build configuration list for PBXNativeTarget "iOS brainf*ck example" */;
+			buildPhases = (
+				837E3D1D23BF7693006148DD /* Sources */,
+				837E3D2823BF7693006148DD /* Frameworks */,
+				837E3D2923BF7693006148DD /* Resources */,
+			);
+			buildRules = (
+				837E3D2A23BF7693006148DD /* PBXBuildRule */,
+			);
+			dependencies = (
+				837E3D1B23BF7693006148DD /* PBXTargetDependency */,
+			);
+			name = "iOS brainf*ck example";
+			productName = "iOS arm64 basic example";
+			productReference = 837E3D2E23BF7693006148DD /* iOS brainf*ck example.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -372,6 +624,12 @@
 				ORGANIZATIONNAME = "Jeffrey Lim";
 				TargetAttributes = {
 					8322BFAF23BF6C7200715F3E = {
+						CreatedOnToolsVersion = 11.3;
+					};
+					837E3CA723BF6F0E006148DD = {
+						CreatedOnToolsVersion = 11.3;
+					};
+					837E3CD623BF71B5006148DD = {
 						CreatedOnToolsVersion = 11.3;
 					};
 				};
@@ -390,9 +648,31 @@
 			projectRoot = "";
 			targets = (
 				8322BFAF23BF6C7200715F3E /* jasm */,
+				837E3CBE23BF7113006148DD /* macOS basic example */,
+				837E3CA723BF6F0E006148DD /* macOS brainf*ck example */,
+				837E3CD623BF71B5006148DD /* iOS basic example */,
+				837E3D1A23BF7693006148DD /* iOS brainf*ck example */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		837E3CD523BF71B5006148DD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		837E3D2923BF7693006148DD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				837E3D3123BF76E4006148DD /* mandelbrot.bf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		8322BFAC23BF6C7200715F3E /* Sources */ = {
@@ -400,17 +680,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				8322C02323BF6CB600715F3E /* InstructionData.cpp in Sources */,
-				8322C01923BF6CB600715F3E /* JitMemoryManager.cpp in Sources */,
+				837E3CBB23BF701F006148DD /* JitLabelMap.cpp in Sources */,
 				8322C03623BF6CB600715F3E /* Instruction.cpp in Sources */,
 				8322C03123BF6CB600715F3E /* main.cpp in Sources */,
 				8322C02623BF6CB600715F3E /* Register.cpp in Sources */,
-				8322C01B23BF6CB600715F3E /* JitVector.cpp in Sources */,
-				8322C01823BF6CB600715F3E /* JitForwardReferenceMap.cpp in Sources */,
-				8322C01C23BF6CB600715F3E /* JitLabelId.cpp in Sources */,
 				8322C02223BF6CB600715F3E /* AssemblerException.cpp in Sources */,
 				8322C02D23BF6CB600715F3E /* File.cpp in Sources */,
 				8322C03823BF6CB600715F3E /* Encoder.cpp in Sources */,
 				8322C03423BF6CB600715F3E /* Tokenizer.cpp in Sources */,
+				837E3CBC23BF7042006148DD /* JitLabelId.cpp in Sources */,
 				8322C02823BF6CB600715F3E /* Action.cpp in Sources */,
 				8322C02C23BF6CB600715F3E /* SourceFileSegments.cpp in Sources */,
 				8322C03323BF6CB600715F3E /* Assembler.cpp in Sources */,
@@ -420,24 +698,107 @@
 				8322C02723BF6CB600715F3E /* Instruction.cpp in Sources */,
 				8322C02E23BF6CB600715F3E /* CodeSegment.cpp in Sources */,
 				8322C02A23BF6CB600715F3E /* Token.cpp in Sources */,
-				8322C01D23BF6CB600715F3E /* JitLabelMap.cpp in Sources */,
 				8322C02523BF6CB600715F3E /* Tokenizer.cpp in Sources */,
-				8322C01F23BF6CB600715F3E /* Assembler.cpp in Sources */,
 				8322C03223BF6CB600715F3E /* InstructionData.cpp in Sources */,
 				8322C02023BF6CB600715F3E /* Log.cpp in Sources */,
 				8322C02923BF6CB600715F3E /* Encoder.cpp in Sources */,
 				8322C03023BF6CB600715F3E /* CommandLine.cpp in Sources */,
-				8322C01723BF6CB600715F3E /* Assembler.cpp in Sources */,
 				8322C03523BF6CB600715F3E /* Register.cpp in Sources */,
 				8322C02F23BF6CB600715F3E /* CodeSegmentSource.cpp in Sources */,
 				8322C03923BF6CB600715F3E /* Token.cpp in Sources */,
-				8322C01A23BF6CB600715F3E /* JitLabelOffsetQueue.cpp in Sources */,
 				8322C03723BF6CB600715F3E /* Action.cpp in Sources */,
 				8322C01E23BF6CB600715F3E /* ActionType.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		837E3CA423BF6F0E006148DD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				837E3CB923BF6FF8006148DD /* JitMemoryManager.cpp in Sources */,
+				837E3CB523BF6FF8006148DD /* JitForwardReferenceMap.cpp in Sources */,
+				837E3CBA23BF6FF8006148DD /* JitVector.cpp in Sources */,
+				837E3CB723BF6FF8006148DD /* JitLabelMap.cpp in Sources */,
+				837E3CAF23BF6F21006148DD /* bf.cpp.jasm in Sources */,
+				837E3CB823BF6FF8006148DD /* JitLabelOffsetQueue.cpp in Sources */,
+				837E3CB423BF6FE6006148DD /* Assembler.cpp in Sources */,
+				837E3CB623BF6FF8006148DD /* JitLabelId.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		837E3CC123BF7113006148DD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				837E3CC223BF7113006148DD /* JitMemoryManager.cpp in Sources */,
+				837E3CC323BF7113006148DD /* JitForwardReferenceMap.cpp in Sources */,
+				837E3CD223BF712D006148DD /* basic.cpp.jasm in Sources */,
+				837E3CC423BF7113006148DD /* JitVector.cpp in Sources */,
+				837E3CC523BF7113006148DD /* JitLabelMap.cpp in Sources */,
+				837E3CC723BF7113006148DD /* JitLabelOffsetQueue.cpp in Sources */,
+				837E3CC823BF7113006148DD /* Assembler.cpp in Sources */,
+				837E3CC923BF7113006148DD /* JitLabelId.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		837E3CD323BF71B5006148DD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				837E3CFA23BF73D1006148DD /* JitMemoryManager.cpp in Sources */,
+				837E3CF623BF73D1006148DD /* JitForwardReferenceMap.cpp in Sources */,
+				837E3CFB23BF73D1006148DD /* JitVector.cpp in Sources */,
+				837E3CF823BF73D1006148DD /* JitLabelMap.cpp in Sources */,
+				837E3D1923BF74C1006148DD /* Assembler.cpp in Sources */,
+				837E3CF223BF71E4006148DD /* basic.cpp.jasm in Sources */,
+				837E3CF423BF73D1006148DD /* ActionType.cpp in Sources */,
+				837E3CF923BF73D1006148DD /* JitLabelOffsetQueue.cpp in Sources */,
+				837E3CF523BF73D1006148DD /* Assembler.cpp in Sources */,
+				837E3CF723BF73D1006148DD /* JitLabelId.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		837E3D1D23BF7693006148DD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				837E3D1E23BF7693006148DD /* JitMemoryManager.cpp in Sources */,
+				837E3D1F23BF7693006148DD /* JitForwardReferenceMap.cpp in Sources */,
+				837E3D2023BF7693006148DD /* JitVector.cpp in Sources */,
+				837E3D2123BF7693006148DD /* JitLabelMap.cpp in Sources */,
+				837E3D2223BF7693006148DD /* Assembler.cpp in Sources */,
+				837E3D2423BF7693006148DD /* ActionType.cpp in Sources */,
+				837E3D2523BF7693006148DD /* JitLabelOffsetQueue.cpp in Sources */,
+				837E3D2623BF7693006148DD /* Assembler.cpp in Sources */,
+				837E3D2723BF7693006148DD /* JitLabelId.cpp in Sources */,
+				837E3D3223BF76F2006148DD /* bf.cpp.jasm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		837E3CB323BF6F72006148DD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8322BFAF23BF6C7200715F3E /* jasm */;
+			targetProxy = 837E3CB223BF6F72006148DD /* PBXContainerItemProxy */;
+		};
+		837E3CBF23BF7113006148DD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8322BFAF23BF6C7200715F3E /* jasm */;
+			targetProxy = 837E3CC023BF7113006148DD /* PBXContainerItemProxy */;
+		};
+		837E3CF123BF71C6006148DD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8322BFAF23BF6C7200715F3E /* jasm */;
+			targetProxy = 837E3CF023BF71C6006148DD /* PBXContainerItemProxy */;
+		};
+		837E3D1B23BF7693006148DD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8322BFAF23BF6C7200715F3E /* jasm */;
+			targetProxy = 837E3D1C23BF7693006148DD /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		8322BFB523BF6C7200715F3E /* Debug */ = {
@@ -567,6 +928,112 @@
 			};
 			name = Release;
 		};
+		837E3CAD23BF6F0E006148DD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		837E3CAE23BF6F0E006148DD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		837E3CCF23BF7113006148DD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		837E3CD023BF7113006148DD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		837E3CEE23BF71B8006148DD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = Javelin/Tools/jasm/example/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "au.com.lim.iOS-basic-example";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		837E3CEF23BF71B8006148DD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = Javelin/Tools/jasm/example/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "au.com.lim.iOS-basic-example";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		837E3D2C23BF7693006148DD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = Javelin/Tools/jasm/example/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "au.com.lim.iOS-bf-example";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		837E3D2D23BF7693006148DD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = Javelin/Tools/jasm/example/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "au.com.lim.iOS-bf-example";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -584,6 +1051,42 @@
 			buildConfigurations = (
 				8322BFB823BF6C7200715F3E /* Debug */,
 				8322BFB923BF6C7200715F3E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		837E3CAC23BF6F0E006148DD /* Build configuration list for PBXNativeTarget "macOS brainf*ck example" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				837E3CAD23BF6F0E006148DD /* Debug */,
+				837E3CAE23BF6F0E006148DD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		837E3CCE23BF7113006148DD /* Build configuration list for PBXNativeTarget "macOS basic example" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				837E3CCF23BF7113006148DD /* Debug */,
+				837E3CD023BF7113006148DD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		837E3CED23BF71B8006148DD /* Build configuration list for PBXNativeTarget "iOS basic example" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				837E3CEE23BF71B8006148DD /* Debug */,
+				837E3CEF23BF71B8006148DD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		837E3D2B23BF7693006148DD /* Build configuration list for PBXNativeTarget "iOS brainf*ck example" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				837E3D2C23BF7693006148DD /* Debug */,
+				837E3D2D23BF7693006148DD /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
