@@ -82,15 +82,15 @@ $(ODIR)/DerivedSources/%.cpp: %.cpp.jasm $(ODIR)/jasm
 	@$(ODIR)/jasm -o $@ -f $<
 
 $(ODIR)/libJavelinAssembler.a: $(patsubst %.cpp,$(ODIR)/Objects/%.o,$(ASSEMBLER_SOURCES))
-	@echo "Linking: [34;1m$@[m"
+	@echo "Linking: [32;1m$@[m"
 	@ar rcs $@ $^ 
 
 $(ODIR)/libJavelinPattern.a: $(patsubst %.cpp,$(ODIR)/Objects/%.o,$(PATTERN_SOURCES)) $(patsubst %.cpp,$(ODIR)/Objects/%.o,$(ASSEMBLER_SOURCES)) $(patsubst %.cpp.jasm,$(ODIR)/Objects/%.o,$(PATTERN_JASM_SOURCES))
-	@echo "Linking: [34;1m$@[m"
+	@echo "Linking: [32;1m$@[m"
 	@ar rcs $@ $^ 
 
 $(ODIR)/jasm: $(patsubst %.cpp,$(ODIR)/Objects/%.o,$(JASM_SOURCES))
-	@echo "Linking: [34;1m$@[m"
+	@echo "Linking: [32;1m$@[m"
 	@$(CC) -o $@ $^
 
 jasm: $(ODIR)/jasm
