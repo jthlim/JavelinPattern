@@ -1,0 +1,594 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 50;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		8322C01723BF6CB600715F3E /* Assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFBF23BF6CB600715F3E /* Assembler.cpp */; };
+		8322C01823BF6CB600715F3E /* JitForwardReferenceMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC223BF6CB600715F3E /* JitForwardReferenceMap.cpp */; };
+		8322C01923BF6CB600715F3E /* JitMemoryManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC323BF6CB600715F3E /* JitMemoryManager.cpp */; };
+		8322C01A23BF6CB600715F3E /* JitLabelOffsetQueue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC723BF6CB600715F3E /* JitLabelOffsetQueue.cpp */; };
+		8322C01B23BF6CB600715F3E /* JitVector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC823BF6CB600715F3E /* JitVector.cpp */; };
+		8322C01C23BF6CB600715F3E /* JitLabelId.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFC923BF6CB600715F3E /* JitLabelId.cpp */; };
+		8322C01D23BF6CB600715F3E /* JitLabelMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFCC23BF6CB600715F3E /* JitLabelMap.cpp */; };
+		8322C01E23BF6CB600715F3E /* ActionType.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFCF23BF6CB600715F3E /* ActionType.cpp */; };
+		8322C01F23BF6CB600715F3E /* Assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFD023BF6CB600715F3E /* Assembler.cpp */; };
+		8322C02023BF6CB600715F3E /* Log.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFD623BF6CB600715F3E /* Log.cpp */; };
+		8322C02123BF6CB600715F3E /* Preprocessor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFD723BF6CB600715F3E /* Preprocessor.cpp */; };
+		8322C02223BF6CB600715F3E /* AssemblerException.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFD823BF6CB600715F3E /* AssemblerException.cpp */; };
+		8322C02323BF6CB600715F3E /* InstructionData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFDD23BF6CB600715F3E /* InstructionData.cpp */; };
+		8322C02423BF6CB600715F3E /* Assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFDE23BF6CB600715F3E /* Assembler.cpp */; };
+		8322C02523BF6CB600715F3E /* Tokenizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFDF23BF6CB600715F3E /* Tokenizer.cpp */; };
+		8322C02623BF6CB600715F3E /* Register.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFE123BF6CB600715F3E /* Register.cpp */; };
+		8322C02723BF6CB600715F3E /* Instruction.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFE623BF6CB600715F3E /* Instruction.cpp */; };
+		8322C02823BF6CB600715F3E /* Action.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFE923BF6CB600715F3E /* Action.cpp */; };
+		8322C02923BF6CB600715F3E /* Encoder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFEA23BF6CB600715F3E /* Encoder.cpp */; };
+		8322C02A23BF6CB600715F3E /* Token.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFEB23BF6CB600715F3E /* Token.cpp */; };
+		8322C02B23BF6CB600715F3E /* Character.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFEC23BF6CB600715F3E /* Character.cpp */; };
+		8322C02C23BF6CB600715F3E /* SourceFileSegments.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFF523BF6CB600715F3E /* SourceFileSegments.cpp */; };
+		8322C02D23BF6CB600715F3E /* File.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFFA23BF6CB600715F3E /* File.cpp */; };
+		8322C02E23BF6CB600715F3E /* CodeSegment.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322BFFD23BF6CB600715F3E /* CodeSegment.cpp */; };
+		8322C02F23BF6CB600715F3E /* CodeSegmentSource.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322C00023BF6CB600715F3E /* CodeSegmentSource.cpp */; };
+		8322C03023BF6CB600715F3E /* CommandLine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322C00123BF6CB600715F3E /* CommandLine.cpp */; };
+		8322C03123BF6CB600715F3E /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322C00223BF6CB600715F3E /* main.cpp */; };
+		8322C03223BF6CB600715F3E /* InstructionData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322C00723BF6CB600715F3E /* InstructionData.cpp */; };
+		8322C03323BF6CB600715F3E /* Assembler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322C00823BF6CB600715F3E /* Assembler.cpp */; };
+		8322C03423BF6CB600715F3E /* Tokenizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322C00923BF6CB600715F3E /* Tokenizer.cpp */; };
+		8322C03523BF6CB600715F3E /* Register.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322C00B23BF6CB600715F3E /* Register.cpp */; };
+		8322C03623BF6CB600715F3E /* Instruction.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322C01023BF6CB600715F3E /* Instruction.cpp */; };
+		8322C03723BF6CB600715F3E /* Action.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322C01323BF6CB600715F3E /* Action.cpp */; };
+		8322C03823BF6CB600715F3E /* Encoder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322C01423BF6CB600715F3E /* Encoder.cpp */; };
+		8322C03923BF6CB600715F3E /* Token.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8322C01523BF6CB600715F3E /* Token.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8322BFAE23BF6C7200715F3E /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		8322BFB023BF6C7200715F3E /* jasm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = jasm; sourceTree = BUILT_PRODUCTS_DIR; };
+		8322BFBB23BF6CB600715F3E /* Assembler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Assembler.h; sourceTree = "<group>"; };
+		8322BFBC23BF6CB600715F3E /* JitLabelMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JitLabelMap.h; sourceTree = "<group>"; };
+		8322BFBE23BF6CB600715F3E /* Assembler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Assembler.h; sourceTree = "<group>"; };
+		8322BFBF23BF6CB600715F3E /* Assembler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Assembler.cpp; sourceTree = "<group>"; };
+		8322BFC023BF6CB600715F3E /* ActionType.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ActionType.h; sourceTree = "<group>"; };
+		8322BFC123BF6CB600715F3E /* ActionTypeTags.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ActionTypeTags.h; sourceTree = "<group>"; };
+		8322BFC223BF6CB600715F3E /* JitForwardReferenceMap.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = JitForwardReferenceMap.cpp; sourceTree = "<group>"; };
+		8322BFC323BF6CB600715F3E /* JitMemoryManager.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = JitMemoryManager.cpp; sourceTree = "<group>"; };
+		8322BFC423BF6CB600715F3E /* JitLabelOffsetQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JitLabelOffsetQueue.h; sourceTree = "<group>"; };
+		8322BFC523BF6CB600715F3E /* JitMemoryManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JitMemoryManager.h; sourceTree = "<group>"; };
+		8322BFC623BF6CB600715F3E /* JitLabelId.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JitLabelId.h; sourceTree = "<group>"; };
+		8322BFC723BF6CB600715F3E /* JitLabelOffsetQueue.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = JitLabelOffsetQueue.cpp; sourceTree = "<group>"; };
+		8322BFC823BF6CB600715F3E /* JitVector.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = JitVector.cpp; sourceTree = "<group>"; };
+		8322BFC923BF6CB600715F3E /* JitLabelId.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = JitLabelId.cpp; sourceTree = "<group>"; };
+		8322BFCA23BF6CB600715F3E /* JitForwardReferenceMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JitForwardReferenceMap.h; sourceTree = "<group>"; };
+		8322BFCB23BF6CB600715F3E /* JitVector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JitVector.h; sourceTree = "<group>"; };
+		8322BFCC23BF6CB600715F3E /* JitLabelMap.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = JitLabelMap.cpp; sourceTree = "<group>"; };
+		8322BFCE23BF6CB600715F3E /* Assembler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Assembler.h; sourceTree = "<group>"; };
+		8322BFCF23BF6CB600715F3E /* ActionType.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ActionType.cpp; sourceTree = "<group>"; };
+		8322BFD023BF6CB600715F3E /* Assembler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Assembler.cpp; sourceTree = "<group>"; };
+		8322BFD123BF6CB600715F3E /* ActionType.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ActionType.h; sourceTree = "<group>"; };
+		8322BFD223BF6CB600715F3E /* ActionTypeTags.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ActionTypeTags.h; sourceTree = "<group>"; };
+		8322BFD523BF6CB600715F3E /* jasm.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = jasm.md; sourceTree = "<group>"; };
+		8322BFD623BF6CB600715F3E /* Log.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Log.cpp; sourceTree = "<group>"; };
+		8322BFD723BF6CB600715F3E /* Preprocessor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Preprocessor.cpp; sourceTree = "<group>"; };
+		8322BFD823BF6CB600715F3E /* AssemblerException.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AssemblerException.cpp; sourceTree = "<group>"; };
+		8322BFDA23BF6CB600715F3E /* Assembler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Assembler.h; sourceTree = "<group>"; };
+		8322BFDB23BF6CB600715F3E /* TokenTags.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TokenTags.h; sourceTree = "<group>"; };
+		8322BFDC23BF6CB600715F3E /* Tokenizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Tokenizer.h; sourceTree = "<group>"; };
+		8322BFDD23BF6CB600715F3E /* InstructionData.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = InstructionData.cpp; sourceTree = "<group>"; };
+		8322BFDE23BF6CB600715F3E /* Assembler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Assembler.cpp; sourceTree = "<group>"; };
+		8322BFDF23BF6CB600715F3E /* Tokenizer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Tokenizer.cpp; sourceTree = "<group>"; };
+		8322BFE023BF6CB600715F3E /* Action.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Action.h; sourceTree = "<group>"; };
+		8322BFE123BF6CB600715F3E /* Register.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Register.cpp; sourceTree = "<group>"; };
+		8322BFE223BF6CB600715F3E /* Encoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Encoder.h; sourceTree = "<group>"; };
+		8322BFE323BF6CB600715F3E /* MatchTags.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MatchTags.h; sourceTree = "<group>"; };
+		8322BFE423BF6CB600715F3E /* EncoderTags.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EncoderTags.h; sourceTree = "<group>"; };
+		8322BFE523BF6CB600715F3E /* Token.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Token.h; sourceTree = "<group>"; };
+		8322BFE623BF6CB600715F3E /* Instruction.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Instruction.cpp; sourceTree = "<group>"; };
+		8322BFE723BF6CB600715F3E /* Instruction.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Instruction.h; sourceTree = "<group>"; };
+		8322BFE823BF6CB600715F3E /* Register.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Register.h; sourceTree = "<group>"; };
+		8322BFE923BF6CB600715F3E /* Action.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Action.cpp; sourceTree = "<group>"; };
+		8322BFEA23BF6CB600715F3E /* Encoder.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Encoder.cpp; sourceTree = "<group>"; };
+		8322BFEB23BF6CB600715F3E /* Token.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Token.cpp; sourceTree = "<group>"; };
+		8322BFEC23BF6CB600715F3E /* Character.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Character.cpp; sourceTree = "<group>"; };
+		8322BFEE23BF6CB600715F3E /* mandelbrot.bf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = mandelbrot.bf; sourceTree = "<group>"; };
+		8322BFF023BF6CB600715F3E /* bf.cpp.jasm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = bf.cpp.jasm; sourceTree = "<group>"; };
+		8322BFF123BF6CB600715F3E /* basic.cpp.jasm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = basic.cpp.jasm; sourceTree = "<group>"; };
+		8322BFF323BF6CB600715F3E /* bf.cpp.jasm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = bf.cpp.jasm; sourceTree = "<group>"; };
+		8322BFF423BF6CB600715F3E /* File.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = File.h; sourceTree = "<group>"; };
+		8322BFF523BF6CB600715F3E /* SourceFileSegments.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SourceFileSegments.cpp; sourceTree = "<group>"; };
+		8322BFF623BF6CB600715F3E /* SourceFileSegments.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SourceFileSegments.h; sourceTree = "<group>"; };
+		8322BFF723BF6CB600715F3E /* Character.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Character.h; sourceTree = "<group>"; };
+		8322BFF823BF6CB600715F3E /* AssemblerException.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AssemblerException.h; sourceTree = "<group>"; };
+		8322BFF923BF6CB600715F3E /* CodeSegment.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CodeSegment.h; sourceTree = "<group>"; };
+		8322BFFA23BF6CB600715F3E /* File.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = File.cpp; sourceTree = "<group>"; };
+		8322BFFB23BF6CB600715F3E /* Log.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Log.h; sourceTree = "<group>"; };
+		8322BFFC23BF6CB600715F3E /* CodeSegmentSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CodeSegmentSource.h; sourceTree = "<group>"; };
+		8322BFFD23BF6CB600715F3E /* CodeSegment.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CodeSegment.cpp; sourceTree = "<group>"; };
+		8322BFFE23BF6CB600715F3E /* CommandLine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CommandLine.h; sourceTree = "<group>"; };
+		8322BFFF23BF6CB600715F3E /* AutoDeleteVector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AutoDeleteVector.h; sourceTree = "<group>"; };
+		8322C00023BF6CB600715F3E /* CodeSegmentSource.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CodeSegmentSource.cpp; sourceTree = "<group>"; };
+		8322C00123BF6CB600715F3E /* CommandLine.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CommandLine.cpp; sourceTree = "<group>"; };
+		8322C00223BF6CB600715F3E /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		8322C00423BF6CB600715F3E /* Assembler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Assembler.h; sourceTree = "<group>"; };
+		8322C00523BF6CB600715F3E /* TokenTags.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TokenTags.h; sourceTree = "<group>"; };
+		8322C00623BF6CB600715F3E /* Tokenizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Tokenizer.h; sourceTree = "<group>"; };
+		8322C00723BF6CB600715F3E /* InstructionData.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = InstructionData.cpp; sourceTree = "<group>"; };
+		8322C00823BF6CB600715F3E /* Assembler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Assembler.cpp; sourceTree = "<group>"; };
+		8322C00923BF6CB600715F3E /* Tokenizer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Tokenizer.cpp; sourceTree = "<group>"; };
+		8322C00A23BF6CB600715F3E /* Action.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Action.h; sourceTree = "<group>"; };
+		8322C00B23BF6CB600715F3E /* Register.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Register.cpp; sourceTree = "<group>"; };
+		8322C00C23BF6CB600715F3E /* Encoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Encoder.h; sourceTree = "<group>"; };
+		8322C00D23BF6CB600715F3E /* MatchTags.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MatchTags.h; sourceTree = "<group>"; };
+		8322C00E23BF6CB600715F3E /* EncoderTags.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EncoderTags.h; sourceTree = "<group>"; };
+		8322C00F23BF6CB600715F3E /* Token.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Token.h; sourceTree = "<group>"; };
+		8322C01023BF6CB600715F3E /* Instruction.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Instruction.cpp; sourceTree = "<group>"; };
+		8322C01123BF6CB600715F3E /* Instruction.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Instruction.h; sourceTree = "<group>"; };
+		8322C01223BF6CB600715F3E /* Register.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Register.h; sourceTree = "<group>"; };
+		8322C01323BF6CB600715F3E /* Action.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Action.cpp; sourceTree = "<group>"; };
+		8322C01423BF6CB600715F3E /* Encoder.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Encoder.cpp; sourceTree = "<group>"; };
+		8322C01523BF6CB600715F3E /* Token.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Token.cpp; sourceTree = "<group>"; };
+		8322C01623BF6CB600715F3E /* Preprocessor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Preprocessor.h; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8322BFAD23BF6C7200715F3E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		8322BFA723BF6C7200715F3E = {
+			isa = PBXGroup;
+			children = (
+				8322BFB223BF6C7200715F3E /* jasm */,
+				8322BFB123BF6C7200715F3E /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		8322BFB123BF6C7200715F3E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8322BFB023BF6C7200715F3E /* jasm */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		8322BFB223BF6C7200715F3E /* jasm */ = {
+			isa = PBXGroup;
+			children = (
+				8322BFBA23BF6CB600715F3E /* Assembler */,
+				8322BFD323BF6CB600715F3E /* Tools */,
+			);
+			path = jasm;
+			sourceTree = "<group>";
+		};
+		8322BFBA23BF6CB600715F3E /* Assembler */ = {
+			isa = PBXGroup;
+			children = (
+				8322BFCD23BF6CB600715F3E /* arm64 */,
+				8322BFBD23BF6CB600715F3E /* x64 */,
+				8322BFBB23BF6CB600715F3E /* Assembler.h */,
+				8322BFC223BF6CB600715F3E /* JitForwardReferenceMap.cpp */,
+				8322BFCA23BF6CB600715F3E /* JitForwardReferenceMap.h */,
+				8322BFC923BF6CB600715F3E /* JitLabelId.cpp */,
+				8322BFC623BF6CB600715F3E /* JitLabelId.h */,
+				8322BFCC23BF6CB600715F3E /* JitLabelMap.cpp */,
+				8322BFBC23BF6CB600715F3E /* JitLabelMap.h */,
+				8322BFC723BF6CB600715F3E /* JitLabelOffsetQueue.cpp */,
+				8322BFC423BF6CB600715F3E /* JitLabelOffsetQueue.h */,
+				8322BFC323BF6CB600715F3E /* JitMemoryManager.cpp */,
+				8322BFC523BF6CB600715F3E /* JitMemoryManager.h */,
+				8322BFC823BF6CB600715F3E /* JitVector.cpp */,
+				8322BFCB23BF6CB600715F3E /* JitVector.h */,
+			);
+			name = Assembler;
+			path = Javelin/Assembler;
+			sourceTree = SOURCE_ROOT;
+		};
+		8322BFBD23BF6CB600715F3E /* x64 */ = {
+			isa = PBXGroup;
+			children = (
+				8322BFBE23BF6CB600715F3E /* Assembler.h */,
+				8322BFBF23BF6CB600715F3E /* Assembler.cpp */,
+				8322BFC023BF6CB600715F3E /* ActionType.h */,
+				8322BFC123BF6CB600715F3E /* ActionTypeTags.h */,
+			);
+			path = x64;
+			sourceTree = "<group>";
+		};
+		8322BFCD23BF6CB600715F3E /* arm64 */ = {
+			isa = PBXGroup;
+			children = (
+				8322BFCE23BF6CB600715F3E /* Assembler.h */,
+				8322BFCF23BF6CB600715F3E /* ActionType.cpp */,
+				8322BFD023BF6CB600715F3E /* Assembler.cpp */,
+				8322BFD123BF6CB600715F3E /* ActionType.h */,
+				8322BFD223BF6CB600715F3E /* ActionTypeTags.h */,
+			);
+			path = arm64;
+			sourceTree = "<group>";
+		};
+		8322BFD323BF6CB600715F3E /* Tools */ = {
+			isa = PBXGroup;
+			children = (
+				8322BFD423BF6CB600715F3E /* jasm */,
+			);
+			name = Tools;
+			path = Javelin/Tools;
+			sourceTree = SOURCE_ROOT;
+		};
+		8322BFD423BF6CB600715F3E /* jasm */ = {
+			isa = PBXGroup;
+			children = (
+				8322C00323BF6CB600715F3E /* arm64 */,
+				8322BFED23BF6CB600715F3E /* example */,
+				8322BFD923BF6CB600715F3E /* x64 */,
+				8322BFD823BF6CB600715F3E /* AssemblerException.cpp */,
+				8322BFF823BF6CB600715F3E /* AssemblerException.h */,
+				8322BFFF23BF6CB600715F3E /* AutoDeleteVector.h */,
+				8322BFEC23BF6CB600715F3E /* Character.cpp */,
+				8322BFF723BF6CB600715F3E /* Character.h */,
+				8322BFFD23BF6CB600715F3E /* CodeSegment.cpp */,
+				8322BFF923BF6CB600715F3E /* CodeSegment.h */,
+				8322C00023BF6CB600715F3E /* CodeSegmentSource.cpp */,
+				8322BFFC23BF6CB600715F3E /* CodeSegmentSource.h */,
+				8322C00123BF6CB600715F3E /* CommandLine.cpp */,
+				8322BFFE23BF6CB600715F3E /* CommandLine.h */,
+				8322BFFA23BF6CB600715F3E /* File.cpp */,
+				8322BFF423BF6CB600715F3E /* File.h */,
+				8322BFD523BF6CB600715F3E /* jasm.md */,
+				8322BFD623BF6CB600715F3E /* Log.cpp */,
+				8322BFFB23BF6CB600715F3E /* Log.h */,
+				8322C00223BF6CB600715F3E /* main.cpp */,
+				8322BFD723BF6CB600715F3E /* Preprocessor.cpp */,
+				8322C01623BF6CB600715F3E /* Preprocessor.h */,
+				8322BFF523BF6CB600715F3E /* SourceFileSegments.cpp */,
+				8322BFF623BF6CB600715F3E /* SourceFileSegments.h */,
+			);
+			path = jasm;
+			sourceTree = "<group>";
+		};
+		8322BFD923BF6CB600715F3E /* x64 */ = {
+			isa = PBXGroup;
+			children = (
+				8322BFDA23BF6CB600715F3E /* Assembler.h */,
+				8322BFDB23BF6CB600715F3E /* TokenTags.h */,
+				8322BFDC23BF6CB600715F3E /* Tokenizer.h */,
+				8322BFDD23BF6CB600715F3E /* InstructionData.cpp */,
+				8322BFDE23BF6CB600715F3E /* Assembler.cpp */,
+				8322BFDF23BF6CB600715F3E /* Tokenizer.cpp */,
+				8322BFE023BF6CB600715F3E /* Action.h */,
+				8322BFE123BF6CB600715F3E /* Register.cpp */,
+				8322BFE223BF6CB600715F3E /* Encoder.h */,
+				8322BFE323BF6CB600715F3E /* MatchTags.h */,
+				8322BFE423BF6CB600715F3E /* EncoderTags.h */,
+				8322BFE523BF6CB600715F3E /* Token.h */,
+				8322BFE623BF6CB600715F3E /* Instruction.cpp */,
+				8322BFE723BF6CB600715F3E /* Instruction.h */,
+				8322BFE823BF6CB600715F3E /* Register.h */,
+				8322BFE923BF6CB600715F3E /* Action.cpp */,
+				8322BFEA23BF6CB600715F3E /* Encoder.cpp */,
+				8322BFEB23BF6CB600715F3E /* Token.cpp */,
+			);
+			path = x64;
+			sourceTree = "<group>";
+		};
+		8322BFED23BF6CB600715F3E /* example */ = {
+			isa = PBXGroup;
+			children = (
+				8322BFEE23BF6CB600715F3E /* mandelbrot.bf */,
+				8322BFEF23BF6CB600715F3E /* x64 */,
+				8322BFF123BF6CB600715F3E /* basic.cpp.jasm */,
+				8322BFF223BF6CB600715F3E /* arm64 */,
+			);
+			path = example;
+			sourceTree = "<group>";
+		};
+		8322BFEF23BF6CB600715F3E /* x64 */ = {
+			isa = PBXGroup;
+			children = (
+				8322BFF023BF6CB600715F3E /* bf.cpp.jasm */,
+			);
+			path = x64;
+			sourceTree = "<group>";
+		};
+		8322BFF223BF6CB600715F3E /* arm64 */ = {
+			isa = PBXGroup;
+			children = (
+				8322BFF323BF6CB600715F3E /* bf.cpp.jasm */,
+			);
+			path = arm64;
+			sourceTree = "<group>";
+		};
+		8322C00323BF6CB600715F3E /* arm64 */ = {
+			isa = PBXGroup;
+			children = (
+				8322C00423BF6CB600715F3E /* Assembler.h */,
+				8322C00523BF6CB600715F3E /* TokenTags.h */,
+				8322C00623BF6CB600715F3E /* Tokenizer.h */,
+				8322C00723BF6CB600715F3E /* InstructionData.cpp */,
+				8322C00823BF6CB600715F3E /* Assembler.cpp */,
+				8322C00923BF6CB600715F3E /* Tokenizer.cpp */,
+				8322C00A23BF6CB600715F3E /* Action.h */,
+				8322C00B23BF6CB600715F3E /* Register.cpp */,
+				8322C00C23BF6CB600715F3E /* Encoder.h */,
+				8322C00D23BF6CB600715F3E /* MatchTags.h */,
+				8322C00E23BF6CB600715F3E /* EncoderTags.h */,
+				8322C00F23BF6CB600715F3E /* Token.h */,
+				8322C01023BF6CB600715F3E /* Instruction.cpp */,
+				8322C01123BF6CB600715F3E /* Instruction.h */,
+				8322C01223BF6CB600715F3E /* Register.h */,
+				8322C01323BF6CB600715F3E /* Action.cpp */,
+				8322C01423BF6CB600715F3E /* Encoder.cpp */,
+				8322C01523BF6CB600715F3E /* Token.cpp */,
+			);
+			path = arm64;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8322BFAF23BF6C7200715F3E /* jasm */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8322BFB723BF6C7200715F3E /* Build configuration list for PBXNativeTarget "jasm" */;
+			buildPhases = (
+				8322BFAC23BF6C7200715F3E /* Sources */,
+				8322BFAD23BF6C7200715F3E /* Frameworks */,
+				8322BFAE23BF6C7200715F3E /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = jasm;
+			productName = jasm;
+			productReference = 8322BFB023BF6C7200715F3E /* jasm */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		8322BFA823BF6C7200715F3E /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1130;
+				ORGANIZATIONNAME = "Jeffrey Lim";
+				TargetAttributes = {
+					8322BFAF23BF6C7200715F3E = {
+						CreatedOnToolsVersion = 11.3;
+					};
+				};
+			};
+			buildConfigurationList = 8322BFAB23BF6C7200715F3E /* Build configuration list for PBXProject "jasm" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 8322BFA723BF6C7200715F3E;
+			productRefGroup = 8322BFB123BF6C7200715F3E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8322BFAF23BF6C7200715F3E /* jasm */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8322BFAC23BF6C7200715F3E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8322C02323BF6CB600715F3E /* InstructionData.cpp in Sources */,
+				8322C01923BF6CB600715F3E /* JitMemoryManager.cpp in Sources */,
+				8322C03623BF6CB600715F3E /* Instruction.cpp in Sources */,
+				8322C03123BF6CB600715F3E /* main.cpp in Sources */,
+				8322C02623BF6CB600715F3E /* Register.cpp in Sources */,
+				8322C01B23BF6CB600715F3E /* JitVector.cpp in Sources */,
+				8322C01823BF6CB600715F3E /* JitForwardReferenceMap.cpp in Sources */,
+				8322C01C23BF6CB600715F3E /* JitLabelId.cpp in Sources */,
+				8322C02223BF6CB600715F3E /* AssemblerException.cpp in Sources */,
+				8322C02D23BF6CB600715F3E /* File.cpp in Sources */,
+				8322C03823BF6CB600715F3E /* Encoder.cpp in Sources */,
+				8322C03423BF6CB600715F3E /* Tokenizer.cpp in Sources */,
+				8322C02823BF6CB600715F3E /* Action.cpp in Sources */,
+				8322C02C23BF6CB600715F3E /* SourceFileSegments.cpp in Sources */,
+				8322C03323BF6CB600715F3E /* Assembler.cpp in Sources */,
+				8322C02423BF6CB600715F3E /* Assembler.cpp in Sources */,
+				8322C02B23BF6CB600715F3E /* Character.cpp in Sources */,
+				8322C02123BF6CB600715F3E /* Preprocessor.cpp in Sources */,
+				8322C02723BF6CB600715F3E /* Instruction.cpp in Sources */,
+				8322C02E23BF6CB600715F3E /* CodeSegment.cpp in Sources */,
+				8322C02A23BF6CB600715F3E /* Token.cpp in Sources */,
+				8322C01D23BF6CB600715F3E /* JitLabelMap.cpp in Sources */,
+				8322C02523BF6CB600715F3E /* Tokenizer.cpp in Sources */,
+				8322C01F23BF6CB600715F3E /* Assembler.cpp in Sources */,
+				8322C03223BF6CB600715F3E /* InstructionData.cpp in Sources */,
+				8322C02023BF6CB600715F3E /* Log.cpp in Sources */,
+				8322C02923BF6CB600715F3E /* Encoder.cpp in Sources */,
+				8322C03023BF6CB600715F3E /* CommandLine.cpp in Sources */,
+				8322C01723BF6CB600715F3E /* Assembler.cpp in Sources */,
+				8322C03523BF6CB600715F3E /* Register.cpp in Sources */,
+				8322C02F23BF6CB600715F3E /* CodeSegmentSource.cpp in Sources */,
+				8322C03923BF6CB600715F3E /* Token.cpp in Sources */,
+				8322C01A23BF6CB600715F3E /* JitLabelOffsetQueue.cpp in Sources */,
+				8322C03723BF6CB600715F3E /* Action.cpp in Sources */,
+				8322C01E23BF6CB600715F3E /* ActionType.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		8322BFB523BF6C7200715F3E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = .;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		8322BFB623BF6C7200715F3E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = .;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		8322BFB823BF6C7200715F3E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		8322BFB923BF6C7200715F3E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		8322BFAB23BF6C7200715F3E /* Build configuration list for PBXProject "jasm" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8322BFB523BF6C7200715F3E /* Debug */,
+				8322BFB623BF6C7200715F3E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8322BFB723BF6C7200715F3E /* Build configuration list for PBXNativeTarget "jasm" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8322BFB823BF6C7200715F3E /* Debug */,
+				8322BFB923BF6C7200715F3E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 8322BFA823BF6C7200715F3E /* Project object */;
+}
