@@ -1,6 +1,6 @@
 CC=clang++
 ODIR=build
-CPPFLAGS=-O3 -I.. -std=c++17 -fomit-frame-pointer -DJBUILDCONFIG_FINAL -DNDEBUG
+CPPFLAGS=-O3 -I. -std=c++17 -fomit-frame-pointer -DJBUILDCONFIG_FINAL -DNDEBUG
 
 ASSEMBLER_SOURCES = Javelin/Assembler/JitForwardReferenceMap.cpp \
 		    Javelin/Assembler/JitLabelId.cpp \
