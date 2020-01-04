@@ -59,16 +59,16 @@ can be determined to fit within 2 bytes. Since the delta can also be
 determined at build time, so the entire run time process can simplify to 
 roughly a memcpy and a patch of `function`'s address.
 
-This result in:
+This results in:
 
-* code that is faster to assemble.
+* Code that is faster to assemble.
 
-* code that hs smaller footprint.
+* Code that hs smaller footprint.
 
   Converting JavelinPattern to use jasm saved almost 100kb of runtime 
   executable size. 
 
-* code that is easier to maintain.
+* Code that is easier to maintain.
 
   _jasm_ code is shorter and looks like inline assembler.
 

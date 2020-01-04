@@ -219,7 +219,7 @@
 		8322BFD023BF6CB600715F3E /* Assembler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Assembler.cpp; sourceTree = "<group>"; };
 		8322BFD123BF6CB600715F3E /* ActionType.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ActionType.h; sourceTree = "<group>"; };
 		8322BFD223BF6CB600715F3E /* ActionTypeTags.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ActionTypeTags.h; sourceTree = "<group>"; };
-		8322BFD523BF6CB600715F3E /* jasm.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = jasm.md; sourceTree = "<group>"; };
+		8322BFD523BF6CB600715F3E /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		8322BFD623BF6CB600715F3E /* Log.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Log.cpp; sourceTree = "<group>"; };
 		8322BFD723BF6CB600715F3E /* Preprocessor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Preprocessor.cpp; sourceTree = "<group>"; };
 		8322BFD823BF6CB600715F3E /* AssemblerException.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AssemblerException.cpp; sourceTree = "<group>"; };
@@ -412,6 +412,7 @@
 		8322BFD423BF6CB600715F3E /* jasm */ = {
 			isa = PBXGroup;
 			children = (
+				8322BFD523BF6CB600715F3E /* README.md */,
 				8322C00323BF6CB600715F3E /* arm64 */,
 				8322BFED23BF6CB600715F3E /* example */,
 				8322BFD923BF6CB600715F3E /* x64 */,
@@ -428,7 +429,6 @@
 				8322BFFE23BF6CB600715F3E /* CommandLine.h */,
 				8322BFFA23BF6CB600715F3E /* File.cpp */,
 				8322BFF423BF6CB600715F3E /* File.h */,
-				8322BFD523BF6CB600715F3E /* jasm.md */,
 				8322BFD623BF6CB600715F3E /* Log.cpp */,
 				8322BFFB23BF6CB600715F3E /* Log.h */,
 				8322C00223BF6CB600715F3E /* main.cpp */,
