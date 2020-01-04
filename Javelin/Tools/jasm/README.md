@@ -10,6 +10,70 @@ It comprises two parts
 
 * Runtime libraries
 
+# Motivation
+
+Writing code that generates run time assembler can look something like:
+
+```c++
+program.add(Register.ECX, Register.EBX);
+program.sub(Register.ECX, Register.EDX);
+
+auto loopStart = program.position();
+program.call(function);
+program.dec(Register.ECX);
+program.jnz(loopStart);
+
+...
+
+void (*jitFunction)() = program.Build();
+```
+
+This suffers from several drawbacks:
+
+* The source code is quite verbose.
+
+* There is likely to be run time overhead on every line -- checking that there
+  is sufficient buffer space for any intermediate structures -- just to append
+  a few bytes of machine code.
+
+* The knowledge of how to encode the complete instruction set is included
+  in the run time.
+
+* The `jnz` instruction could be encoded in either 2 bytes or 5 bytes.
+  This decision is either resolved at run time, or a pessmisitic 5 bytes is
+  reserved.
+
+_jasm_ addresses these by using a preprocessor pass.
+
+```
+»  add ecx, ebx
+»  sub ecx, edx
+» 1:
+»  call {function}
+»  dec exc
+»  jnz 1b
+```
+
+In this case, the entire code block is processed at build time and he `jnz` 
+can be determined to fit within 2 bytes. Since the delta can also be 
+determined at build time, so the entire run time process can simplify to 
+roughly a memcpy and a patch of `function`'s address.
+
+This result in:
+
+* code that is faster to assemble.
+
+* code that hs smaller footprint.
+
+  Converting JavelinPattern to use jasm saved almost 100kb of runtime 
+  executable size. 
+
+* code that is easier to maintain.
+
+  _jasm_ code is shorter and looks like inline assembler.
+
+The cost of this is having an extra step at build time.
+
 # Features
 
 * x64 and arm64 support
