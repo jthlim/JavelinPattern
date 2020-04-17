@@ -50,11 +50,11 @@ _jasm_ addresses these by using a preprocessor pass.
 »  sub ecx, edx
 » 1:
 »  call {function}
-»  dec exc
+»  dec ecx
 »  jnz 1b
 ```
 
-In this case, the entire code block is processed at build time and he `jnz` 
+In this case, the entire code block is processed at build time and the `jnz` 
 can be determined to fit within 2 bytes. Since the delta can also be 
 determined at build time, so the entire run time process can simplify to 
 roughly a memcpy and a patch of `function`'s address.
@@ -63,7 +63,7 @@ This results in:
 
 * Code that is faster to assemble.
 
-* Code that hs smaller footprint.
+* Code that has a smaller footprint.
 
   Converting JavelinPattern to use jasm saved almost 100kb of runtime 
   executable size. 
