@@ -1,7 +1,9 @@
 //============================================================================
 
 #pragma once
+#include "Javelin/Assembler/arm64/RelEncoding.h"
 #include "Javelin/Tools/jasm/arm64/Encoder.h"
+#include "Javelin/Tools/jasm/Common/Action.h"
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -12,14 +14,12 @@ namespace Javelin::Assembler::arm64
 {
 //============================================================================
 
-	class Action;
+	using Common::Action;
 	class Assembler;
 	class ListAction;
 
 //============================================================================
 
-	enum class RelEncoding : uint8_t;
-	
 	enum class MatchBitIndex : uint8_t
 	{
 		#define TAG(x,y) x,
@@ -66,14 +66,6 @@ namespace Javelin::Assembler::arm64
 			Extend,
 		};
 		
-		enum class JumpType : uint8_t
-		{
-			Name,				// Use labelName
-			Backward,			// Use labelValue
-			Forward,			// Use labelValue
-			BackwardOrForward,	// Use labelValue
-		};
-
 		enum class ImmediateType : uint8_t
 		{
 			Integer,
@@ -253,7 +245,7 @@ namespace Javelin::Assembler::arm64
 			reference = 0;
 		}
 		
-		Action* CreatePatchAction(RelEncoding relEncoding, int offset) const;
+		Action* CreatePatchAction(arm64Assembler::RelEncoding relEncoding, int offset) const;
 	};
 
 //============================================================================

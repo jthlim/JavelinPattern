@@ -1,0 +1,69 @@
+#include "Javelin/Assembler/x64/Assembler.h"
+#include <stdio.h>
+
+class Modifier
+{
+public:
+    virtual ~Modifier() { }
+    virtual int Calculate(int) const = 0;
+};
+
+» .macro callViaRAXIfNecessary TARGET
+»   .if delta32{size_t(TARGET)-5}
+»     call {TARGET}
+»   .else
+»     mov rax, qword {TARGET}
+»     call rax
+»   .endif
+» .endm
+
+» .define scaleAmount 2
+» .macro callScale
+» .if scaleAmount == 2
+»   lea rax, [rdi+rdi]
+» .else
+»   callViaRAXIfNecessary &Scale
+» .endif
+» .endm
+
+static int Scale(int x)
+{
+    « return scaleAmount*x;
+}
+
+// Returns an object that calculates 2x + c
+static Modifier* CreateValue(int i)
+{
+    Javelin::Assembler assembler(Javelin::SimpleJitMemoryManager::GetInstance(),
+                                 Javelin::SimpleJitDataMemoryManager::GetInstance());
+    
+    void (*DeleteValue)(void*) = Javelin::SimpleJitMemoryManager::StaticInstanceRelease;
+
+    » .data
+    »  *counter dw 0
+    »
+    » .code
+    »  dq vtbl
+    » vtbl dq destructor, {DeleteValue}, calculate
+    » calculate:
+    »  mov rdi, rsi
+    »  callScale
+    »  add eax, {i}
+    »  inc dword *counter
+    »  add eax, dword *counter
+    » destructor:
+    »  ret
+    
+    return (Modifier*) assembler.Build();
+}
+
+int main()
+{
+    Modifier* modifier = CreateValue(10);
+    printf("value: %d\n", modifier->Calculate(100));
+    printf("value: %d\n", modifier->Calculate(100));
+    printf("value: %d\n", modifier->Calculate(100));
+    delete modifier;
+
+    return 0;
+}

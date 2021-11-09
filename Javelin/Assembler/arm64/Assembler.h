@@ -7,6 +7,7 @@
 #include "Javelin/Assembler/JitLabelMap.h"
 #include "Javelin/Assembler/JitMemoryManager.h"
 #include "Javelin/Assembler/arm64/ActionType.h"
+#include "Javelin/Assembler/arm64/RelEncoding.h"
 #include <stdint.h>
 #include <string.h>
 
@@ -32,6 +33,7 @@ namespace Javelin
 		void AppendData(const void *data, uint32_t byteSize) { memcpy(AppendData(byteSize), data, byteSize); }
 		void AppendDataPointer(const void *data, uint32_t byteSize);
 
+        void* GetLabelIdAddress(uint32_t labelId) const       { return labels.GetIfExists(labelId); }
 		void* GetNamedLabelAddress(const char *label) const   { return labels.GetIfExists(GetLabelIdForNamed(label)); }
 		void* GetNumericLabelAddress(uint32_t label) const    { return labels.GetIfExists(GetLabelIdForNumeric(label)); }
 		void* GetExpressionLabelAddress(uint32_t label) const { return labels.GetIfExists(GetLabelIdForExpression(label)); }
@@ -96,12 +98,12 @@ namespace Javelin
 		static uint32_t ReadUnsigned16(const uint8_t* &s);
 		static uint32_t ReadUnsigned32(const uint8_t* &s);
 		static void SkipExpressionValue(const uint8_t* &s);
-		static void Patch(uint8_t *p, uint32_t encoding, int64_t delta);
+		static void Patch(uint8_t* p, arm64Assembler::RelEncoding encoding, int64_t delta);
 		uint32_t LogicalOpcodeValue(uint64_t v);
-		int8_t ReadB1ExpressionValue(const uint8_t *&s, const AppendAssemblyReference *blockData);
-		int32_t ReadB2ExpressionValue(const uint8_t *&s, const AppendAssemblyReference *blockData);
-		int32_t ReadB4ExpressionValue(const uint8_t *&s, const AppendAssemblyReference *blockData);
-		int64_t ReadB8ExpressionValue(const uint8_t *&s, const AppendAssemblyReference *blockData);
+		int8_t ReadB1ExpressionValue(const uint8_t* &s, const AppendAssemblyReference *blockData);
+		int32_t ReadB2ExpressionValue(const uint8_t* &s, const AppendAssemblyReference *blockData);
+		int32_t ReadB4ExpressionValue(const uint8_t* &s, const AppendAssemblyReference *blockData);
+		int64_t ReadB8ExpressionValue(const uint8_t* &s, const AppendAssemblyReference *blockData);
 		
 		friend class Assembler;
 	};

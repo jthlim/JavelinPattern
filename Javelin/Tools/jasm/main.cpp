@@ -8,6 +8,7 @@
 #include "Javelin/Tools/jasm/SourceFileSegments.h"
 
 #include "Javelin/Tools/jasm/arm64/Assembler.h"
+#include "Javelin/Tools/jasm/riscv/Assembler.h"
 #include "Javelin/Tools/jasm/x64/Assembler.h"
 
 #include <unistd.h>
@@ -123,7 +124,13 @@ void Main::ProcessFileSegments(FILE *outputFile)
 			case CodeSegment::ContentType::AssemblerTypeChange:
 				for(const CodeLine &line : codeSegment->contents)
 				{
-					commandLine.SetAssemblerType(AssemblerType(line.line));
+                    AssemblerType type(line.line);
+                    
+                    // This check is because comment lines can be merged with AssemblerTypeChange.
+                    if (type.IsValid())
+                    {
+                        commandLine.SetAssemblerType(type);
+                    }
 				}
 				break;
 			case CodeSegment::ContentType::Assembler:
@@ -149,7 +156,7 @@ void Main::ProcessFileSegments(FILE *outputFile)
 					switch(commandLine.GetAssemblerType())
 					{
 					case AssemblerType::Unknown:
-						Log::Error("Internal error");
+						Log::Error("Internal error - unknown AssemblerType");
 						break;
 					case AssemblerType::Arm64:
 						{
@@ -159,6 +166,33 @@ void Main::ProcessFileSegments(FILE *outputFile)
 							assembler.Write(outputFile, lineNumber, &expectedFileIndex, fileSegments.GetFilenameList());
 						}
 						break;
+                    case AssemblerType::RiscV:
+                        {
+                            riscv::Assembler assembler(false);
+                            assembler.AssembleSegment(*codeSegment, fileSegments.GetFilenameList());
+                            if(Log::IsVerboseEnabled()) assembler.Dump();
+                            riscv::Assembler compressedAssembler(true);
+                            compressedAssembler.AssembleSegment(*codeSegment, fileSegments.GetFilenameList());
+                            if(Log::IsVerboseEnabled()) compressedAssembler.Dump();
+                            if (!assembler.IsEquivalentByteCode(compressedAssembler))
+                            {
+                                fprintf(outputFile, "#line %d\n", codeSegment->GetStartingLine());
+                                fprintf(outputFile, "if (Javelin::Assembler::CanUseCompressedInstructions()) {\n");
+                                fprintf(outputFile, "#line %d\n", codeSegment->GetStartingLine());
+                                compressedAssembler.Write(outputFile, lineNumber, &expectedFileIndex, fileSegments.GetFilenameList());
+                                fprintf(outputFile, "#line %d\n", codeSegment->GetStartingLine());
+                                fprintf(outputFile, "} else {\n");
+                                fprintf(outputFile, "#line %d\n", codeSegment->GetStartingLine());
+                                assembler.Write(outputFile, lineNumber, &expectedFileIndex, fileSegments.GetFilenameList());
+                                fprintf(outputFile, "#line %d\n", codeSegment->GetStartingLine());
+                                fprintf(outputFile, "}\n");
+                            }
+                            else
+                            {
+                                assembler.Write(outputFile, lineNumber, &expectedFileIndex, fileSegments.GetFilenameList());
+                            }
+                        }
+                        break;
 					case AssemblerType::X64:
 						{
 							x64::Assembler assembler;

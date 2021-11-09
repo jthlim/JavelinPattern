@@ -1,0 +1,119 @@
+#include "Javelin/Assembler/Assembler.h"
+#include <stdio.h>
+
+//// Simple test.
+//
+//static int (*CreateTest(int returnValue))()
+//{
+//  Javelin::Assembler assembler(Javelin::SimpleJitMemoryManager::GetInstance());
+//
+//#if defined(__amd64__)
+//  int x = 1234;
+//  » .x64
+//  » mov eax, {returnValue}
+//  » ret
+//#elif defined(__arm64__)
+//  » .arm64
+//  » mov w0, #{returnValue}
+//  » ret
+//#else
+//  #error "Unsupported runtime"
+//#endif
+//  return (int (*)()) assembler.Build();
+//}
+//
+//int main()
+//{
+//  int (*test)() = CreateTest(123);
+//  printf("Result: %d\n", test());
+//  Javelin::SimpleJitMemoryManager::StaticInstanceRelease((void*) test);
+//
+//  return 0;
+//}
+
+// Generator test.
+
+class Generator
+{
+public:
+  static Generator* Create(int stepValue);
+    
+  virtual ~Generator();
+
+  virtual int generate();
+};
+
+Generator* Generator::Create(int stepValue)
+{
+  Javelin::Assembler assembler(Javelin::SimpleJitMemoryManager::GetInstance(),
+							   Javelin::SimpleJitDataMemoryManager::GetInstance());
+
+  static void (*const destructor)(void*, void*) = [](void *pCode, void *pData) {
+    Javelin::SimpleJitMemoryManager::StaticInstanceRelease(pCode);
+    Javelin::SimpleJitDataMemoryManager::StaticInstanceRelease(pData);
+  };
+    
+#if defined(__amd64__)
+  » .x64
+  » .data
+  » *vtblPointer dq *vtbl
+  » *counter dd 0
+
+  » .code
+  » *vtbl:
+  »   dq 0  // Unused
+  »   dq destructor
+  »   dq generate
+  » generate:
+  »   mov eax, *counter
+  »   lea edx, [rax + imm8{stepValue}]
+  »   mov *counter, edx
+  »   ret
+  » destructor:
+  »   lea rdi, [*vtbl]
+  »   lea rsi, [*vtblPointer]
+  »   jmp {destructor}
+#elif defined(__arm64__)
+  » .arm64
+  » .data
+  » *vtblPointer .quad *vtbl
+  » *counter .word 0
+
+  » .code
+  » *vtbl:
+  »   .quad 0  // Unused
+  »   .quad destructor
+  »   .quad generate
+  » generate:
+  »   adrp x1, *counter
+  »   add x1, x1, *counter[11:0]
+  »   ldr w0, [x1]
+  »   add w2, w0, #{stepValue}
+  »   str w2, [x1]
+  »   ret
+  » destructor:
+  »   adrp x0, *vtbl
+  »   add x0, x0, *vtbl[11:0]
+  »   adrp x1, *vtblPointer
+  »   add x1, x1, *vtblPointer[11:0]
+  »   b {destructor}
+#else
+  #error "Unsupported runtime"
+#endif
+  assembler.Build();
+    
+  return (Generator*) assembler.GetDataSegment();
+}
+
+int main()
+{
+  Generator *test = Generator::Create(2);
+
+  printf("Result: %d\n", test->generate());
+  printf("Result: %d\n", test->generate());
+  printf("Result: %d\n", test->generate());
+
+  delete test;
+         
+  return 0;
+}

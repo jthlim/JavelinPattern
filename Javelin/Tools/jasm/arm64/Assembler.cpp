@@ -3,6 +3,7 @@
 #include "Javelin/Tools/jasm/arm64/Assembler.h"
 
 #include "Javelin/Assembler/arm64/ActionType.h"
+#include "Javelin/Assembler/arm64/RelEncoding.h"
 #include "Javelin/Tools/jasm/AssemblerException.h"
 #include "Javelin/Tools/jasm/CommandLine.h"
 #include "Javelin/Tools/jasm/Log.h"
@@ -15,9 +16,9 @@
 
 //============================================================================
 
-using namespace Javelin::Assembler;
-using namespace Javelin::Assembler::arm64;
-
+using namespace Javelin::arm64Assembler;
+namespace Javelin::Assembler::arm64
+{
 //============================================================================
 
 class OperandMap : public std::unordered_map<std::string, Operand*>
@@ -702,7 +703,7 @@ void Assembler::ParseInstruction(ListAction& listAction, Tokenizer &tokenizer, c
 		   && operands[i]->type == Operand::Type::Register)
 		{
 			MatchBitfield extraMatch = 0;
-			if((operands[i-2]->matchBitfield == operands[i]->matchBitfield))
+			if(operands[i-2]->matchBitfield == operands[i]->matchBitfield)
 			{
 				extraMatch = MatchRep;
 			}
@@ -752,12 +753,10 @@ int Assembler::AddExpression(const std::string& expression, int maxBitWidth, int
 	ExpressionToIndexMap::const_iterator it = expressionToIndexMap.find(expression);
 	if(it != expressionToIndexMap.end())
 	{
-		int index = it->second;
-		if(expressionList[index-1].maxBitWidth < maxBitWidth)
-		{
-			expressionList[index-1].maxBitWidth = maxBitWidth;
-		}
-		return index;
+        int index = it->second;
+        Expression &exp = expressionList[index-1];
+        if(exp.maxBitWidth < maxBitWidth) exp.maxBitWidth = maxBitWidth;
+        return index;
 	}
 	
 	int index = (int) expressionList.size() + 1;
@@ -776,7 +775,7 @@ int Assembler::AddExpression(const std::string& expression, int maxBitWidth, int
 void Assembler::UpdateExpressionList()
 {
 	int expressionOffset = 0;
-	for(Expression & e : expressionList)
+	for(Expression &e : expressionList)
 	{
 		if(e.maxBitWidth == 0) e.maxBitWidth = 32;
 		e.offset = expressionOffset;
@@ -794,6 +793,8 @@ void Assembler::UpdateExpressionList()
 
 void Assembler::Write(FILE *f, int startingLine, int *expectedFileIndex, const std::vector<std::string> &filenameList) const
 {
+    static const int appendAssemblerReferenceSize = 12;
+    
 	if(!rootListAction.HasData()) return;
 
 	char *prefix = (char*) alloca(segmentIndent+1);
@@ -802,7 +803,7 @@ void Assembler::Write(FILE *f, int startingLine, int *expectedFileIndex, const s
 	
 	fprintf(f, "%s{  // begin jasm block\n", prefix);
 
-	ActionWriteContext context(isDataSegment, CommandLine::GetInstance().GetAssemblerVariableName());
+	ActionWriteContext context(isDataSegment, appendAssemblerReferenceSize, CommandLine::GetInstance().GetAssemblerVariableName());
 	
 	int expressionOffset = 0;
 	for(const Expression &e : expressionList)
@@ -870,7 +871,7 @@ void Assembler::Write(FILE *f, int startingLine, int *expectedFileIndex, const s
 		fprintf(f, "%s  };\n", prefix);
 		fprintf(f, "%s#pragma pack(pop)\n", prefix);
 		
-		fprintf(f, "%s  static_assert(sizeof(JasmExpressionData) == %d, \"jasm internal error: Unexpected size for data struct\");\n", prefix, expressionOffset+12);
+		fprintf(f, "%s  static_assert(sizeof(JasmExpressionData) == %d, \"jasm internal error: Unexpected size for data struct\");\n", prefix, expressionOffset+appendAssemblerReferenceSize);
 	}
 	if(startingLine != -1) fprintf(f, "#line %d\n", startingLine);
 	fprintf(f, "%s  static const uint8_t *jasmData = (const uint8_t*)", prefix);
@@ -1003,7 +1004,7 @@ Next:
 				DeleteWrapper<LabelOperand> *labelOperand = new DeleteWrapper<LabelOperand>();
 				temporaryOperands.push_back(labelOperand);
 				labelOperand->global = globalLabel;
-				labelOperand->jumpType = LabelOperand::JumpType::Backward;
+				labelOperand->jumpType = JumpType::Backward;
 				labelOperand->matchBitfield = labelMatch;
 				labelOperand->labelValue = token.GetLabelValue();
 				labelOperand->reference = labelReference++;
@@ -1015,7 +1016,7 @@ Next:
 				DeleteWrapper<LabelOperand> *labelOperand = new DeleteWrapper<LabelOperand>();
 				temporaryOperands.push_back(labelOperand);
 				labelOperand->global = globalLabel;
-				labelOperand->jumpType = LabelOperand::JumpType::Forward;
+				labelOperand->jumpType = JumpType::Forward;
 				labelOperand->matchBitfield = labelMatch;
 				labelOperand->labelValue = token.GetLabelValue();
 				labelOperand->reference = labelReference++;
@@ -1027,7 +1028,7 @@ Next:
 				DeleteWrapper<LabelOperand> *labelOperand = new DeleteWrapper<LabelOperand>();
 				temporaryOperands.push_back(labelOperand);
 				labelOperand->global = globalLabel;
-				labelOperand->jumpType = LabelOperand::JumpType::BackwardOrForward;
+				labelOperand->jumpType = JumpType::BackwardOrForward;
 				labelOperand->matchBitfield = labelMatch;
 				labelOperand->labelValue = token.GetLabelValue();
 				labelOperand->reference = labelReference++;
@@ -1065,7 +1066,7 @@ Next:
 				DeleteWrapper<LabelOperand> *labelOperand = new DeleteWrapper<LabelOperand>();
 				temporaryOperands.push_back(labelOperand);
 				labelOperand->global = globalLabel;
-				labelOperand->jumpType = LabelOperand::JumpType::Backward;
+				labelOperand->jumpType = JumpType::Backward;
 				labelOperand->matchBitfield = labelMatch;
 				labelOperand->expressionIndex = expressionIndex;
 				labelOperand->reference = labelReference++;
@@ -1079,7 +1080,7 @@ Next:
 				DeleteWrapper<LabelOperand> *labelOperand = new DeleteWrapper<LabelOperand>();
 				temporaryOperands.push_back(labelOperand);
 				labelOperand->global = globalLabel;
-				labelOperand->jumpType = LabelOperand::JumpType::Forward;
+				labelOperand->jumpType = JumpType::Forward;
 				labelOperand->matchBitfield = labelMatch;
 				labelOperand->expressionIndex = expressionIndex;
 				labelOperand->reference = labelReference++;
@@ -1093,7 +1094,7 @@ Next:
 				DeleteWrapper<LabelOperand> *labelOperand = new DeleteWrapper<LabelOperand>();
 				temporaryOperands.push_back(labelOperand);
 				labelOperand->global = globalLabel;
-				labelOperand->jumpType = LabelOperand::JumpType::BackwardOrForward;
+				labelOperand->jumpType = JumpType::BackwardOrForward;
 				labelOperand->matchBitfield = labelMatch;
 				labelOperand->expressionIndex = expressionIndex;
 				labelOperand->reference = labelReference++;
@@ -1161,7 +1162,7 @@ Next:
 			DeleteWrapper<LabelOperand> *labelOperand = new DeleteWrapper<LabelOperand>();
 			temporaryOperands.push_back(labelOperand);
 			labelOperand->global = globalLabel;
-			labelOperand->jumpType = LabelOperand::JumpType::Name;
+			labelOperand->jumpType = JumpType::Name;
 			labelOperand->matchBitfield = labelMatch;
 			labelOperand->labelName = token.sValue;
 			labelOperand->reference = labelReference++;
@@ -1454,5 +1455,9 @@ Operand* Assembler::ParseOperandLogical(Tokenizer &tokenizer, AutoDeleteVector &
 		result->matchBitfield = MatchImmAll;
 	}
 }
+
+//============================================================================
+
+} // namespace Javelin::Assembler::arm64
 
 //============================================================================

@@ -43,6 +43,12 @@ AssemblerType::AssemblerType(const std::string& typeString)
 		type = Arm64;
 		return;
 	}
+
+    if(HasPrefix(data, end, "riscv", 5))
+    {
+        type = RiscV;
+        return;
+    }
 }
 
 bool AssemblerType::HasPrefix(const char *data, const char *end, const char *prefix, int length)
@@ -141,6 +147,11 @@ CommandLine::CommandLine(int argc, const char** argv)
 			assemblerType = AssemblerType::Arm64;
 			++i;
 		}
+        else if(strcmp(argv[i], "-riscv") == 0)
+        {
+            assemblerType = AssemblerType::RiscV;
+            ++i;
+        }
 		else if(strcmp(argv[i], "-x64") == 0
 				|| strcmp(argv[i], "-x86_64") == 0)
 		{

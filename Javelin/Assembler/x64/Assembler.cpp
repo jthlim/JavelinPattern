@@ -1580,8 +1580,6 @@ uint8_t* SegmentAssembler::GenerateByteCode(uint8_t *__restrict p)
 #pragma clang diagnostic ignored "-Wunreachable-code"
 			uint32_t labelId;
 			uint32_t index;
-			uint32_t rel8Offset;
-			uint32_t jumpOffset;
 			uint8_t *target;
 #pragma clang diagnostic pop
 		CASE(Rel8LabelCondition):
@@ -1603,10 +1601,10 @@ uint8_t* SegmentAssembler::GenerateByteCode(uint8_t *__restrict p)
 		CASE(Rel8ExpressionLabelForwardCondition):
 			labelId = GetLabelIdForExpression(ReadB4ExpressionValue(s, blockData));
 		ProcessLabelForwardCondition:
-			index = *s++;
-			++s; // skip rel8Offset
-			jumpOffset = *s++;
-			{
+            {
+                index = *s++;
+                ++s; // skip rel8Offset
+                uint32_t jumpOffset = *s++;
 				uint32_t currentOffset = forwardLabelReferences[index+blockData->forwardLabelReferenceOffset];
 				assert(currentOffset != 0);
 				uint32_t target = firstPassLabelOffsets.GetFirstLabelOffset(labelId);
@@ -1622,8 +1620,8 @@ uint8_t* SegmentAssembler::GenerateByteCode(uint8_t *__restrict p)
 		ProcessLabelBackwardCondition:
 			target = (uint8_t*) labels.Get(labelId);
 		ProcessLabelBackwardConditionTarget:
-			rel8Offset = *s++;
-			jumpOffset = *s++;
+			uint32_t rel8Offset = *s++;
+            uint32_t jumpOffset = *s++;
 			int32_t delta = int32_t(target - p - rel8Offset);
 			if(delta != (int8_t) delta) s += jumpOffset;
 			CONTINUE;
@@ -1664,11 +1662,12 @@ uint8_t* SegmentAssembler::GenerateByteCode(uint8_t *__restrict p)
 		ProcessBackwardsLabel:
 			target = (uint8_t*) labels.Get(labelId);
 		ProcessBackwardsTarget:
-			int32_t delta = int32_t(target - p);
-
-			uint8_t bytes = *s++;
-			uint8_t offset = *s++;
-			Patch(p-offset, bytes, delta);
+            {
+                int32_t delta = int32_t(target - p);
+                uint8_t bytes = *s++;
+                uint8_t offset = *s++;
+                Patch(p-offset, bytes, delta);
+            }
 			CONTINUE;
 		}
 		CASE(PatchAbsoluteAddress):

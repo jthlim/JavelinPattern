@@ -1,13 +1,12 @@
 //============================================================================
 
-#if defined(__arm64__)
+#if 0 // defined(__arm64__)
 
 //============================================================================
 
 #include "Javelin/Assembler/arm64/Assembler.h"
 
 #include "Javelin/Assembler/JitMemoryManager.h"
-#include "Javelin/Assembler/x64/ActionType.h"
 #include <algorithm>
 #include <stdint.h>
 
@@ -237,11 +236,11 @@ uint32_t SegmentAssembler::LogicalOpcodeValue(uint64_t v)
 	return opcodeValue;
 }
 
-void SegmentAssembler::Patch(uint8_t *p, uint32_t encoding, int64_t delta)
+void SegmentAssembler::Patch(uint8_t *p, RelEncoding encoding, int64_t delta)
 {
 	switch(encoding)
 	{
-	case 0:	// Rel26
+    case RelEncoding::Rel26:
 		{
 			uint32_t opcode;
 			memcpy(&opcode, p, 4);
@@ -251,7 +250,7 @@ void SegmentAssembler::Patch(uint8_t *p, uint32_t encoding, int64_t delta)
 			memcpy(p, &opcode, 4);
 		}
 		break;
-	case 1:	// Rel19Offset5
+    case RelEncoding::Rel19Offset5:
 		{
 			uint32_t opcode;
 			memcpy(&opcode, p, 4);
@@ -261,14 +260,14 @@ void SegmentAssembler::Patch(uint8_t *p, uint32_t encoding, int64_t delta)
 			memcpy(p, &opcode, 4);
 		}
 		break;
-	case 2: // Adrp
+    case RelEncoding::Adrp:
 		{
 			uint64_t current = uint64_t(p) >> 12;
 			uint64_t target = uint64_t(p + delta) >> 12;
 			delta = target - current;
 		}
 		[[fallthrough]];
-	case 3: // Rel21HiLoSplit
+    case RelEncoding::Rel21HiLo:
 		{
 //			struct Opcode
 //			{
@@ -308,7 +307,7 @@ void SegmentAssembler::Patch(uint8_t *p, uint32_t encoding, int64_t delta)
 			memcpy(p, &opcode, 4);
 		}
 		break;
-	case 4:	// Rel14Offset5
+    case RelEncoding::Rel14Offset5:
 		{
 			uint32_t opcode;
 			memcpy(&opcode, p, 4);
@@ -317,7 +316,7 @@ void SegmentAssembler::Patch(uint8_t *p, uint32_t encoding, int64_t delta)
 			memcpy(p, &opcode, 4);
 		}
 		break;
-	case 5: // Imm12
+    case RelEncoding::Imm12:
 		{
 			uint32_t opcode;
 			memcpy(&opcode, p, 4);
@@ -329,7 +328,7 @@ void SegmentAssembler::Patch(uint8_t *p, uint32_t encoding, int64_t delta)
 			memcpy(p, &opcode, 4);
 		}
 		break;
-	case 6: // Rel64
+    case RelEncoding::Rel64:
 		{
 			int64_t rel;
 			memcpy(&rel, p, 8);
@@ -764,7 +763,7 @@ uint8_t *SegmentAssembler::GenerateByteCode(__restrict uint8_t* p)
 				JitForwardReferenceData *last;
 				do
 				{
-					Patch(data->p, data->data, (int64_t) p);
+					Patch(data->p, (RelEncoding) data->data, (intptr_t) p - (intptr_t) data->p);
 					last = data;
 					data = data->next;
 				} while(data);
@@ -775,11 +774,8 @@ uint8_t *SegmentAssembler::GenerateByteCode(__restrict uint8_t* p)
 		{	// Scope block for encoding, labelId
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunreachable-code"
-			uint8_t encoding;
 			uint32_t labelId;
 			const uint8_t *target;
-			uint8_t *patchAddress;
-			int64_t delta;
 #pragma clang diagnostic pop
 		CASE(PatchExpression):
 			target = (const uint8_t*) ReadB8ExpressionValue(s, blockData);
@@ -801,13 +797,12 @@ uint8_t *SegmentAssembler::GenerateByteCode(__restrict uint8_t* p)
 		ProcessForwardLabel:
 			{
 				JitForwardReferenceData *refData = unresolvedLabels.Add(labelId);
-				encoding = *s++;
-				patchAddress = p + ReadSigned16(s);
-				refData->data = encoding;
+				RelEncoding encoding = (RelEncoding) *s++;
+                uint8_t *patchAddress = p + ReadSigned16(s);
+				refData->data = (uint32_t) encoding;
 				refData->p = patchAddress;
 			}
-			delta = -(int64_t) patchAddress;
-			goto ProcessPatch;
+            CONTINUE;
 		CASE(PatchLabelBackward):
 			labelId = ReadUnsigned32(s);
 			goto ProcessBackwardLabel;
@@ -816,10 +811,9 @@ uint8_t *SegmentAssembler::GenerateByteCode(__restrict uint8_t* p)
 		ProcessBackwardLabel:
 			target = (uint8_t*) labels.Get(labelId);
 		ProcessBackwardTarget:
-			encoding = *s++;
-			patchAddress = p + ReadSigned16(s);
-			delta = target - patchAddress;
-		ProcessPatch:
+			RelEncoding encoding = (RelEncoding) *s++;
+            uint8_t *patchAddress = p + ReadSigned16(s);
+            int64_t delta = target - patchAddress;
 			Patch(patchAddress, encoding, delta);
 		}
 			CONTINUE;	// Continue outside variable scope produces better register allocations

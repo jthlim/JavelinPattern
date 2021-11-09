@@ -18,101 +18,6 @@ using namespace Javelin::Assembler::x64;
 
 //============================================================================
 
-const AlwaysAlternateActionCondition AlwaysAlternateActionCondition::instance;
-const NeverAlternateActionCondition NeverAlternateActionCondition::instance;
-
-//============================================================================
-
-bool AlternateActionCondition::Equals(const AlternateActionCondition *other) const
-{
-	return this == other;
-}
-
-void AlwaysAlternateActionCondition::WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context, const Action &action) const
-{
-	// Do nothing.
-}
-
-AndAlternateActionCondition::~AndAlternateActionCondition()
-{
-	for(const AlternateActionCondition *condition : conditionList)
-	{
-		condition->Release();
-	}
-}
-
-bool AndAlternateActionCondition::Equals(const AlternateActionCondition *other) const
-{
-	if(typeid(*this) != typeid(*other)) return false;
-	AndAlternateActionCondition *o = (AndAlternateActionCondition*) other;
-	if(conditionList.size() != o->conditionList.size()) return false;
-	for(size_t i = 0; i < conditionList.size(); ++i)
-	{
-		if(!conditionList[i]->Equals(o->conditionList[i])) return false;
-	}
-	return true;
-}
-
-AlternateActionCondition::Result AndAlternateActionCondition::IsValid(ActionContext &context, const Action *action) const
-{
-	bool isAlways = true;
-	for(const AlternateActionCondition *condition : conditionList)
-	{
-		switch(condition->IsValid(context, action))
-		{
-		case Result::Never:
-			return Result::Never;
-		case Result::Maybe:
-			isAlways = false;
-			break;
-		case Result::Always:
-			break;
-		}
-	}
-	return isAlways ? Result::Always : Result::Maybe;
-}
-
-std::string AndAlternateActionCondition::GetDescription() const
-{
-	std::string result = "AND(";
-	bool first = true;
-	for(const AlternateActionCondition *condition : conditionList)
-	{
-		if (first) first = false;
-		else result.push_back(',');
-		result.append(condition->GetDescription());
-	}
-	result.push_back(')');
-	return result;
-}
-
-void AndAlternateActionCondition::WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context, const Action &action) const
-{
-	// Each WriteByteCode wraps the previous condition, so write conditions in
-	// reverse order so that they are processed in the same order that they're
-	// written.
-	for(auto it = conditionList.crbegin(); it != conditionList.crend(); ++it)
-	{
-		(*it)->WriteByteCode(result, context, action);
-	}
-}
-
-void NeverAlternateActionCondition::WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context, const Action &action) const
-{
-	assert(!"NeverAlternateAction should never be serialized!");
-}
-
-void ImmediateAlternateActionCondition::WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context, const Action &action, int opcode) const
-{
-	// Prefix with condition code
-	std::vector<uint8_t> conditionCode;
-	conditionCode.push_back((int) opcode);
-	Action::WriteExpressionOffset(conditionCode, context, expressionIndex);
-	if(result.size() >= 256) throw AssemblerException("Encoding Error: Alternate jump offset should be less than 256 bytes");
-	conditionCode.push_back(result.size());
-	result.insert(result.begin(), conditionCode.begin(), conditionCode.end());
-}
-
 const AlternateActionCondition* ZeroAlternateActionCondition::Create(const Operand *operand)
 {
 	assert(operand->type == Operand::Type::Immediate
@@ -120,13 +25,6 @@ const AlternateActionCondition* ZeroAlternateActionCondition::Create(const Opera
 	assert(operand->IsExpression());
 	
 	return new ZeroAlternateActionCondition(operand->expressionIndex);
-}
-
-std::string ZeroAlternateActionCondition::GetDescription() const
-{
-	char buffer[24];
-	sprintf(buffer, "Zero{%d}", expressionIndex);
-	return buffer;
 }
 
 void ZeroAlternateActionCondition::WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context, const Action &action) const
@@ -171,13 +69,6 @@ void Imm8AlternateActionCondition::WriteByteCode(std::vector<uint8_t> &result, A
 	}
 	
 	ImmediateAlternateActionCondition::WriteByteCode(result, context, action, (int)actionType);
-}
-
-bool ImmediateAlternateActionCondition::Equals(const AlternateActionCondition *other) const
-{
-	if(typeid(*this) != typeid(*other)) return false;
-	ImmediateAlternateActionCondition *o = (ImmediateAlternateActionCondition*) other;
-	return expressionIndex == o->expressionIndex;
 }
 
 const AlternateActionCondition* Imm16AlternateActionCondition::Create(const Operand *operand)
@@ -277,21 +168,20 @@ const AlternateActionCondition* Rel8AlternateActionCondition::Create(const Opera
 
 std::string Rel8AlternateActionCondition::GetDescription() const
 {
-	const char *JUMP_TYPES[] = { "", "f", "b", "bf" };
 	char buffer[24];
 	if(labelOperand.IsExpression())
 	{
-		sprintf(buffer, "Rel8{*{%d}%s}", labelOperand.expressionIndex, JUMP_TYPES[(int)labelOperand.jumpType]);
+		sprintf(buffer, "Rel8{*{%d}%s}", labelOperand.expressionIndex, labelOperand.jumpType.ToString());
 		return buffer;
 	}
 	switch(labelOperand.jumpType)
 	{
-	case LabelOperand::JumpType::Name:
+	case JumpType::Name:
 		return "Rel8{" + labelOperand.labelName + "}";
-	case LabelOperand::JumpType::Forward:
-	case LabelOperand::JumpType::Backward:
-	case LabelOperand::JumpType::BackwardOrForward:
-		sprintf(buffer, "Rel8{%" PRId64 "%s}", labelOperand.labelValue, JUMP_TYPES[(int)labelOperand.jumpType]);
+	case JumpType::Forward:
+	case JumpType::Backward:
+	case JumpType::BackwardOrForward:
+		sprintf(buffer, "Rel8{%" PRId64 "%s}", labelOperand.labelValue, labelOperand.jumpType.ToString());
 		return buffer;
 	}
 }
@@ -310,28 +200,28 @@ AlternateActionCondition::Result Rel8AlternateActionCondition::IsValid(ActionCon
 	// context contains an offset at the end of the alternate.
 	switch(labelOperand.jumpType)
 	{
-	case LabelOperand::JumpType::Name:
+	case JumpType::Name:
 		{
 			ActionContext::NamedLabelMap::const_iterator it = context.namedLabels.find(labelOperand.labelName);
 			if(it == context.namedLabels.end()) return Result::Maybe;
 			return IsValid(context.offset, it->second);
 		}
-	case LabelOperand::JumpType::Forward:
-	case LabelOperand::JumpType::Backward:
-	case LabelOperand::JumpType::BackwardOrForward:
+	case JumpType::Forward:
+	case JumpType::Backward:
+	case JumpType::BackwardOrForward:
 		return IsValidForJumpType(context, labelOperand.jumpType);
 	}
 }
 
-AlternateActionCondition::Result Rel8AlternateActionCondition::IsValidForJumpType(ActionContext &context, Operand::JumpType jumpType) const
+AlternateActionCondition::Result Rel8AlternateActionCondition::IsValidForJumpType(ActionContext &context, JumpType jumpType) const
 {
 	if(context.forwards)
 	{
-		if(labelOperand.jumpType == Operand::JumpType::Forward) return Result::Maybe;
+		if(labelOperand.jumpType == JumpType::Forward) return Result::Maybe;
 	}
 	else
 	{
-		if(labelOperand.jumpType == Operand::JumpType::Backward) return Result::Maybe;
+		if(labelOperand.jumpType == JumpType::Backward) return Result::Maybe;
 	}
 
 	if(labelOperand.IsExpression())
@@ -374,17 +264,17 @@ void Rel8AlternateActionCondition::WriteByteCode(std::vector<uint8_t> &result, A
 	{
 		switch(labelOperand.jumpType)
 		{
-		case LabelOperand::JumpType::Forward:
+		case JumpType::Forward:
 			conditionCode.push_back((int) x64Assembler::ActionType::Rel8ExpressionLabelForwardCondition);
 			Action::WriteExpressionOffset(conditionCode, context, labelOperand.expressionIndex);
 			conditionCode.push_back(context.GetForwardLabelReferenceIndex(labelOperand.reference, 1));
 			break;
-		case LabelOperand::JumpType::Backward:
+		case JumpType::Backward:
 			conditionCode.push_back((int) x64Assembler::ActionType::Rel8ExpressionLabelBackwardCondition);
 			Action::WriteExpressionOffset(conditionCode, context, labelOperand.expressionIndex);
 			assert(action.GetMaximumLength() == (uint8_t)action.GetMaximumLength());
 			break;
-		case LabelOperand::JumpType::BackwardOrForward:
+		case JumpType::BackwardOrForward:
 			conditionCode.push_back((int) x64Assembler::ActionType::Rel8ExpressionLabelCondition);
 			Action::WriteExpressionOffset(conditionCode, context, labelOperand.expressionIndex);
 			conditionCode.push_back(context.GetForwardLabelReferenceIndex(labelOperand.reference, 1));
@@ -398,7 +288,7 @@ void Rel8AlternateActionCondition::WriteByteCode(std::vector<uint8_t> &result, A
 	{
 		switch(labelOperand.jumpType)
 		{
-		case LabelOperand::JumpType::Name:
+		case JumpType::Name:
 			if(labelOperand.global)
 			{
 				conditionCode.push_back((int) x64Assembler::ActionType::Rel8LabelCondition);
@@ -425,7 +315,7 @@ void Rel8AlternateActionCondition::WriteByteCode(std::vector<uint8_t> &result, A
 				}
 			}
 			break;
-		case LabelOperand::JumpType::Forward:
+		case JumpType::Forward:
 			if(labelOperand.global)
 			{
 				conditionCode.push_back((int) x64Assembler::ActionType::Rel8LabelForwardCondition);
@@ -441,7 +331,7 @@ void Rel8AlternateActionCondition::WriteByteCode(std::vector<uint8_t> &result, A
 				conditionCode.push_back(context.GetForwardLabelReferenceIndex(labelOperand.reference, 1));
 			}
 			break;
-		case LabelOperand::JumpType::Backward:
+		case JumpType::Backward:
 			if(labelOperand.global)
 			{
 				conditionCode.push_back((int) x64Assembler::ActionType::Rel8LabelBackwardCondition);
@@ -457,7 +347,7 @@ void Rel8AlternateActionCondition::WriteByteCode(std::vector<uint8_t> &result, A
 				assert(action.GetMaximumLength() == (uint8_t)action.GetMaximumLength());
 			}
 			break;
-		case LabelOperand::JumpType::BackwardOrForward:
+		case JumpType::BackwardOrForward:
 			if(labelOperand.global)
 			{
 				conditionCode.push_back((int) x64Assembler::ActionType::Rel8LabelCondition);
@@ -493,21 +383,20 @@ const AlternateActionCondition* Rel32AlternateActionCondition::Create(const Oper
 
 std::string Rel32AlternateActionCondition::GetDescription() const
 {
-	const char *JUMP_TYPES[] = { "", "f", "b", "bf" };
 	char buffer[24];
 	if(labelOperand.IsExpression())
 	{
-		sprintf(buffer, "Rel32{*{%d}%s}", labelOperand.expressionIndex, JUMP_TYPES[(int)labelOperand.jumpType]);
+		sprintf(buffer, "Rel32{*{%d}%s}", labelOperand.expressionIndex, labelOperand.jumpType.ToString());
 		return buffer;
 	}
 	switch(labelOperand.jumpType)
 	{
-	case LabelOperand::JumpType::Name:
+	case JumpType::Name:
 		return "Rel32{" + labelOperand.labelName + "}";
-	case LabelOperand::JumpType::Forward:
-	case LabelOperand::JumpType::Backward:
-	case LabelOperand::JumpType::BackwardOrForward:
-		sprintf(buffer, "Rel32{%" PRId64 "%s}", labelOperand.labelValue, JUMP_TYPES[(int)labelOperand.jumpType]);
+	case JumpType::Forward:
+	case JumpType::Backward:
+	case JumpType::BackwardOrForward:
+		sprintf(buffer, "Rel32{%" PRId64 "%s}", labelOperand.labelValue, labelOperand.jumpType.ToString());
 		return buffer;
 	}
 }
@@ -526,28 +415,28 @@ AlternateActionCondition::Result Rel32AlternateActionCondition::IsValid(ActionCo
 	// context contains an offset at the end of the alternate.
 	switch(labelOperand.jumpType)
 	{
-	case LabelOperand::JumpType::Name:
+	case JumpType::Name:
 		{
 			ActionContext::NamedLabelMap::const_iterator it = context.namedLabels.find(labelOperand.labelName);
 			if(it == context.namedLabels.end()) return Result::Maybe;
 			return IsValid(context.offset, it->second);
 		}
-	case LabelOperand::JumpType::Forward:
-	case LabelOperand::JumpType::Backward:
-	case LabelOperand::JumpType::BackwardOrForward:
+	case JumpType::Forward:
+	case JumpType::Backward:
+	case JumpType::BackwardOrForward:
 		return IsValidForJumpType(context, labelOperand.jumpType);
 	}
 }
 
-AlternateActionCondition::Result Rel32AlternateActionCondition::IsValidForJumpType(ActionContext &context, Operand::JumpType jumpType) const
+AlternateActionCondition::Result Rel32AlternateActionCondition::IsValidForJumpType(ActionContext &context, JumpType jumpType) const
 {
 	if(context.forwards)
 	{
-		if(labelOperand.jumpType == Operand::JumpType::Forward) return Result::Maybe;
+		if(labelOperand.jumpType == JumpType::Forward) return Result::Maybe;
 	}
 	else
 	{
-		if(labelOperand.jumpType == Operand::JumpType::Backward) return Result::Maybe;
+		if(labelOperand.jumpType == JumpType::Backward) return Result::Maybe;
 	}
 
 	if(labelOperand.IsExpression())
@@ -595,100 +484,6 @@ void Delta32AlternateActionCondition::WriteByteCode(std::vector<uint8_t> &result
 
 //============================================================================
 
-// Returns true if any changes have occurred.
-bool Action::ResolveRelativeAddresses(ActionContext &context)
-{
-	actionOffset = context.offset;
-	ssize_t minimumLength = GetMinimumLength();
-	ssize_t maximumLength = GetMaximumLength();
-	if(!context.forwards)
-	{
-		minimumLength = -minimumLength;
-		maximumLength = -maximumLength;
-	}
-	if(minimumLength != maximumLength)
-	{
-		context.offset.blockIndex++;
-		context.offset.offsetIntoBlock = 0;
-		context.offset.alignment = 0;
-	}
-	else
-	{
-		context.offset.offsetIntoBlock += minimumLength;
-	}
-	context.offset.totalMinimumOffset += minimumLength;
-	context.offset.totalMaximumOffset += maximumLength;
-	return false;
-}
-
-void Action::WriteUnsigned32(std::vector<uint8_t> &result, uint32_t value)
-{
-	uint8_t data[sizeof(value)];
-	memcpy(data, &value, sizeof(value));
-	result.insert(result.end(), data, data+sizeof(value));
-}
-
-void Action::WriteUnsignedVLE(std::vector<uint8_t> &result, uint32_t value)
-{
-	for(;;)
-	{
-		if(value < 128)
-		{
-			result.push_back(value);
-			return;
-		}
-		result.push_back(value | 0x80);
-		value >>= 7;
-	}
-}
-
-void Action::WriteSignedVLE(std::vector<uint8_t> &result, int32_t value)
-{
-	int32_t sign = value >> 31;
-	uint32_t unsignedValue = value;
-	uint32_t encode = (unsignedValue << 1) ^ sign;
-	WriteUnsignedVLE(result, encode);
-}
-
-void Action::WriteExpressionOffset(std::vector<uint8_t> &result,
-								   const ActionWriteContext &context,
-								   int expressionIndex)
-{
-	static const int appendAssemblerReferenceSize = 16;
-	assert(0 < expressionIndex && expressionIndex <= context.expressionInfo.size());
-	int offset = context.expressionInfo[expressionIndex-1].offset + appendAssemblerReferenceSize;
-	assert((offset >> 16) == 0);
-	result.push_back(offset);
-	result.push_back(offset >> 8);
-}
-
-//============================================================================
-
-void SetAssemblerVariableNameAction::Dump() const
-{
-	printf("\nassemblerVariableName:%s\n", variableName.c_str());
-}
-
-LiteralAction::LiteralAction(const std::vector<uint8_t> &aBytes) : bytes(aBytes)
-{
-}
-
-LiteralAction::~LiteralAction()
-{	
-}
-
-void LiteralAction::Dump() const
-{
-	printf(" \"");
-	bool first = true;
-	for(uint8_t value : bytes)
-	{
-		printf(first ? "0x%02x" : ", 0x%02x", value);
-		first = false;
-	}
-	printf("\"");
-}
-
 void LiteralAction::WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const
 {
 	if(bytes.size() <= 16)
@@ -705,94 +500,15 @@ void LiteralAction::WriteByteCode(std::vector<uint8_t> &result, ActionWriteConte
 	result.insert(result.end(), bytes.begin(), bytes.end());
 }
 
-void LiteralAction::AppendBytes(const std::vector<uint8_t>& extraBytes)
-{
-	bytes.insert(bytes.end(), extraBytes.begin(), extraBytes.end());
-}
-
-void LiteralAction::AppendToLiteral(LiteralAction *literal) const
-{
-	literal->AppendBytes(bytes);
-}
-
-bool LiteralAction::Simplify(ListAction *parent, size_t index)
-{
-	if(!index || !parent) return false;
-
-	Action *previousAction = parent->GetActionAtIndex(index-1);
-	if(!previousAction->IsLiteralAction()) return false;
-
-	LiteralAction *literalAction = (LiteralAction *) previousAction;
-	literalAction->AppendBytes(bytes);
-	
-	parent->RemoveActionAtIndex(index);
-	delete this;
-	return true;
-}
-
 //============================================================================
 
-void AlignedAction::Dump() const
-{
-	printf(", aligned(%d)", alignment);
-}
-
-bool AlignedAction::ResolveRelativeAddresses(ActionContext &context)
-{
-	if(context.forwards == false) return false;
-	
-	context.offset.alignment = alignment;
-	context.offset.blockIndex++;
-	context.offset.offsetIntoBlock = 0;
-	return false;
-}
-
-void AlignedAction::WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const
-{
-	// No byte code emitted.
-}
-
-//============================================================================
-
-void AlignAction::Dump() const
-{
-	printf(", align(%d)", alignment);
-}
-
-size_t AlignAction::GetMinimumLength() const
-{
-	if(isFixed) return fixedLength;
-	return 0;
-}
-
-size_t AlignAction::GetMaximumLength() const
-{
-	if(isFixed) return fixedLength;
-	return alignment-1;
-}
-
-bool AlignAction::ResolveRelativeAddresses(ActionContext &context)
-{
-	if(context.forwards && context.offset.alignment >= alignment)
-	{
-		isFixed = true;
-		fixedLength = -context.offset.offsetIntoBlock & (alignment-1);
-		return true;
-	}
-	else
-	{
-		return Action::ResolveRelativeAddresses(context);
-	}
-}
-
-bool AlignAction::Simplify(ListAction *parent, size_t index)
+bool AlignAction::Simplify(Common::ListAction *parent, size_t index)
 {
 	if(isFixed)
 	{
 		if(fixedLength == 0)
 		{
 			if(parent) parent->RemoveActionAtIndex(index);
-			else parent->ReplaceActionAtIndex(index, new LiteralAction({}));
 			return true;
 		}
 		
@@ -827,6 +543,8 @@ bool AlignAction::Simplify(ListAction *parent, size_t index)
 
 void AlignAction::WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const
 {
+    if (isFixed && fixedLength == 0) return;
+    
 	result.push_back((int) x64Assembler::ActionType::Align);
 	int data = alignment - 1;
 	assert(data == (uint8_t) data);
@@ -835,41 +553,7 @@ void AlignAction::WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext
 
 //============================================================================
 
-void UnalignAction::Dump() const
-{
-	printf(", unalign(%d)", alignment);
-}
-
-size_t UnalignAction::GetMinimumLength() const
-{
-	if(isFixed) return fixedLength;
-	return 0;
-}
-
-size_t UnalignAction::GetMaximumLength() const
-{
-	if(isFixed) return fixedLength;
-	return 1;
-}
-
-bool UnalignAction::ResolveRelativeAddresses(ActionContext &context)
-{
-	if(context.forwards == false) return false;
-	
-	if(context.offset.alignment >= alignment)
-	{
-		isFixed = true;
-		fixedLength = (context.offset.offsetIntoBlock & (alignment-1)) ? 0 : 1;
-		return true;
-	}
-	else
-	{
-		Action::ResolveRelativeAddresses(context);
-	}
-	return false;
-}
-
-bool UnalignAction::Simplify(ListAction *parent, size_t index)
+bool UnalignAction::Simplify(Common::ListAction *parent, size_t index)
 {
 	if(isFixed)
 	{
@@ -888,7 +572,9 @@ bool UnalignAction::Simplify(ListAction *parent, size_t index)
 
 void UnalignAction::WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const
 {
-	result.push_back((int) x64Assembler::ActionType::Unalign);
+    if (isFixed && fixedLength == 0) return;
+
+    result.push_back((int) x64Assembler::ActionType::Unalign);
 	int data = alignment - 1;
 	assert(data == (uint8_t) data);
 	result.push_back(data);
@@ -1298,45 +984,6 @@ void DynamicOpcodeRVM::WriteByteCode(std::vector<uint8_t> &result, ActionWriteCo
 
 //============================================================================
 
-bool LabelAction::Simplify(ListAction *parent, size_t index)
-{
-	if(global) return false;
-	if(hasReference) return false;
-	
-	if(Log::IsVerboseEnabled())
-	{
-		printf("\n");
-		Log::Verbose("Removing locallabel (0 references):");
-		Dump();
-		printf("\n");
-	}
-	
-	// Local variable that has no references. Remove it.
-	parent->RemoveActionAtIndex(index);
-	delete this;
-	return true;
-}
-
-void NamedLabelAction::Dump() const
-{
-	printf("\nLabel(%s%s)", global ? "*" : "", value.c_str());
-}
-
-bool NamedLabelAction::ResolveRelativeAddresses(ActionContext &context)
-{
-	if(context.forwards) hasReference = global;
-	
-	if(!global)
-	{
-		if(context.namedReferenceSet.find(value) != context.namedReferenceSet.end())
-		{
-			hasReference = true;
-		}
-	}
-	context.namedLabels[value] = context.offset;
-	return Inherited::ResolveRelativeAddresses(context);
-}
-
 void NamedLabelAction::WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const
 {
 	uint32_t labelId = GetLabelIdForNamed(value.c_str());
@@ -1352,28 +999,6 @@ void NamedLabelAction::WriteByteCode(std::vector<uint8_t> &result, ActionWriteCo
 		WriteUnsigned32(result, GetLabelIdForIndexed(index));
 	}
 	context.numberOfLabels++;
-}
-
-void NumericLabelAction::Dump() const
-{
-	printf("\nLabel(%s%" PRId64 ")", global ? "*" : "", value);
-}
-
-bool NumericLabelAction::ResolveRelativeAddresses(ActionContext &context)
-{
-	// First pass reset code.
-	if(context.forwards) hasReference = global;
-	
-	if(!global)
-	{
-		if(context.numericReferenceSet.find(value) != context.numericReferenceSet.end())
-		{
-			hasReference = true;
-		}
-	}
-	
-	context.numericLabels[global ? value ^ -1 : value] = context.offset;
-	return Inherited::ResolveRelativeAddresses(context);
 }
 
 void NumericLabelAction::WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const
@@ -1393,11 +1018,6 @@ void NumericLabelAction::WriteByteCode(std::vector<uint8_t> &result, ActionWrite
 	context.numberOfLabels++;
 }
 
-void ExpressionLabelAction::Dump() const
-{
-	printf("\nLabel(*{%d})", expressionIndex);
-}
-
 void ExpressionLabelAction::WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const
 {
 	result.push_back((int) x64Assembler::ActionType::ExpressionLabel);
@@ -1405,13 +1025,9 @@ void ExpressionLabelAction::WriteByteCode(std::vector<uint8_t> &result, ActionWr
 	context.numberOfLabels++;
 }
 
-bool ExpressionLabelAction::ResolveRelativeAddresses(ActionContext &context)
-{
-	context.expressionLabels[expressionIndex] = context.offset;
-	return Inherited::ResolveRelativeAddresses(context);
-}
+//============================================================================
 
-bool PatchLabelAction::Simplify(ListAction *parent, size_t index)
+bool PatchLabelAction::Simplify(Common::ListAction *parent, size_t index)
 {
 	if(!hasFixedDelta) return false;
 
@@ -1441,10 +1057,11 @@ bool PatchLabelAction::Simplify(ListAction *parent, size_t index)
 		   && previousAction->GetMaximumLength() >= offset);
 	
 	LiteralAction *literal = (LiteralAction*) previousAction;
+    std::vector<uint8_t>& literalBytes = literal->GetLiteralData();
 	int64_t value = 0;
-	memcpy(&value, literal->bytes.data() + literal->bytes.size() - offset, bytes);
+	memcpy(&value, literalBytes.data() + literalBytes.size() - offset, bytes);
 	value += delta;
-	memcpy(literal->bytes.data() + literal->bytes.size() - offset, &value, bytes);
+	memcpy(literalBytes.data() + literalBytes.size() - offset, &value, bytes);
 	parent->RemoveActionAtIndex(index);
 	delete this;
 	return true;
@@ -1471,7 +1088,7 @@ bool PatchNameLabelAction::ResolveRelativeAddresses(ActionContext &context)
 	if(it == context.namedLabels.end()) return false;
 	hasFoundTarget = true;
 
-	labelOperand.jumpType = context.forwards ? Operand::JumpType::Backward : Operand::JumpType::Forward;
+	labelOperand.jumpType = context.forwards ? JumpType::Backward : JumpType::Forward;
 
 	const ActionOffset anchorOffset = context.offset;
 	const ActionOffset targetOffset = it->second;
@@ -1506,17 +1123,17 @@ void PatchNameLabelAction::WriteByteCode(std::vector<uint8_t> &result, ActionWri
 		uint32_t index = context.GetIndexForLabelId(labelId);
 		switch(labelOperand.jumpType)
 		{
-		case Operand::JumpType::Name:
-		case Operand::JumpType::BackwardOrForward:
+		case JumpType::Name:
+		case JumpType::BackwardOrForward:
 			throw AssemblerException("Internal error: Unexpected jumpType");
-		case Operand::JumpType::Forward:
+		case JumpType::Forward:
 			result.push_back((int) x64Assembler::ActionType::PatchLabelForward);
 			WriteUnsigned32(result, GetLabelIdForIndexed(index));
 			result.push_back(bytes);
 			result.push_back(offset);
 			context.AddForwardLabelReference(labelOperand.reference);
 			break;
-		case Operand::JumpType::Backward:
+		case JumpType::Backward:
 			result.push_back((int) x64Assembler::ActionType::PatchLabelBackward);
 			WriteUnsigned32(result, GetLabelIdForIndexed(index));
 			result.push_back(bytes);
@@ -1528,8 +1145,7 @@ void PatchNameLabelAction::WriteByteCode(std::vector<uint8_t> &result, ActionWri
 
 void PatchNumericLabelAction::Dump() const
 {
-	const char *JUMP_TYPES[] = { "", "f", "b", "bf" };
-	printf(", %s#%d@-%d=%" PRId64 "%s", global ? "*" : "", bytes, offset, value, JUMP_TYPES[(int)labelOperand.jumpType]);
+	printf(", %s#%d@-%d=%" PRId64 "%s", global ? "*" : "", bytes, offset, value, labelOperand.jumpType.ToString());
 	if(hasFixedDelta) printf("=%" PRId64, delta);
 }
 
@@ -1544,7 +1160,7 @@ bool PatchNumericLabelAction::ResolveRelativeAddresses(ActionContext &context)
 	{
 		if(context.forwards)
 		{
-			if(labelOperand.jumpType == Operand::JumpType::Forward)
+			if(labelOperand.jumpType == JumpType::Forward)
 			{
 				context.numericReferenceSet.insert(value);
 				return false;
@@ -1552,7 +1168,7 @@ bool PatchNumericLabelAction::ResolveRelativeAddresses(ActionContext &context)
 		}
 		else
 		{
-			if(labelOperand.jumpType == Operand::JumpType::Backward)
+			if(labelOperand.jumpType == JumpType::Backward)
 			{
 				context.numericReferenceSet.insert(value);
 				return false;
@@ -1562,18 +1178,18 @@ bool PatchNumericLabelAction::ResolveRelativeAddresses(ActionContext &context)
 	
 	if(context.forwards)
 	{
-		if(labelOperand.jumpType == Operand::JumpType::Forward) return false;
+		if(labelOperand.jumpType == JumpType::Forward) return false;
 	}
 	else
 	{
-		if(labelOperand.jumpType == Operand::JumpType::Backward) return false;
+		if(labelOperand.jumpType == JumpType::Backward) return false;
 	}
 
 	ActionContext::NumericLabelMap::const_iterator it = context.numericLabels.find(global ? value ^ -1 : value);
 	if(it == context.numericLabels.end()) return false;
 	hasFoundTarget = true;
 
-	labelOperand.jumpType = context.forwards ? Operand::JumpType::Backward : Operand::JumpType::Forward;
+	labelOperand.jumpType = context.forwards ? JumpType::Backward : JumpType::Forward;
 
 	const ActionOffset anchorOffset = context.offset;
 	const ActionOffset targetOffset = it->second;
@@ -1599,22 +1215,22 @@ void PatchNumericLabelAction::WriteByteCode(std::vector<uint8_t> &result, Action
 		int32_t labelId = GetLabelIdForGlobalNumeric(labelOperand.labelValue);
 		switch(labelOperand.jumpType)
 		{
-		case Operand::JumpType::Name:
+		case JumpType::Name:
 			throw AssemblerException("Internal error: Unexpected jumpType");
-		case Operand::JumpType::Forward:
+		case JumpType::Forward:
 			result.push_back((int) x64Assembler::ActionType::PatchLabelForward);
 			WriteUnsigned32(result, labelId);
 			result.push_back(bytes);
 			result.push_back(offset);
 			context.AddForwardLabelReference(labelOperand.reference);
 			break;
-		case Operand::JumpType::Backward:
+		case JumpType::Backward:
 			result.push_back((int) x64Assembler::ActionType::PatchLabelBackward);
 			WriteUnsigned32(result, labelId);
 			result.push_back(bytes);
 			result.push_back(offset);
 			break;
-		case Operand::JumpType::BackwardOrForward:
+		case JumpType::BackwardOrForward:
 			result.push_back((int) x64Assembler::ActionType::PatchLabel);
 			WriteUnsigned32(result, labelId);
 			result.push_back(bytes);
@@ -1629,22 +1245,22 @@ void PatchNumericLabelAction::WriteByteCode(std::vector<uint8_t> &result, Action
 		int index = context.GetIndexForLabelId(labelId);
 		switch(labelOperand.jumpType)
 		{
-		case Operand::JumpType::Name:
+		case JumpType::Name:
 			throw AssemblerException("Internal error: Unexpected jumpType");
-		case Operand::JumpType::Forward:
+		case JumpType::Forward:
 			result.push_back((int) x64Assembler::ActionType::PatchLabelForward);
 			WriteUnsigned32(result, GetLabelIdForIndexed(index));
 			result.push_back(bytes);
 			result.push_back(offset);
 			context.AddForwardLabelReference(labelOperand.reference);
 			break;
-		case Operand::JumpType::Backward:
+		case JumpType::Backward:
 			result.push_back((int) x64Assembler::ActionType::PatchLabelBackward);
 			WriteUnsigned32(result, GetLabelIdForIndexed(index));
 			result.push_back(bytes);
 			result.push_back(offset);
 			break;
-		case Operand::JumpType::BackwardOrForward:
+		case JumpType::BackwardOrForward:
 			throw AssemblerException("Label %" PRId64 " not resolved", labelOperand.labelValue);
 		}
 	}
@@ -1658,13 +1274,11 @@ PatchExpressionLabelAction::PatchExpressionLabelAction(uint8_t bytes, uint8_t of
 
 void PatchExpressionLabelAction::Dump() const
 {
-	const char* JUMP_TYPES[] = { "", "f", "b", "bf" };
-
 	printf(", #%d@-%d=*{%d}%s",
 		   bytes,
 		   offset,
 		   labelOperand.expressionIndex,
-		   JUMP_TYPES[(int)labelOperand.jumpType]);
+           labelOperand.jumpType.ToString());
 }
 
 bool PatchExpressionLabelAction::ResolveRelativeAddresses(ActionContext &context)
@@ -1675,18 +1289,18 @@ bool PatchExpressionLabelAction::ResolveRelativeAddresses(ActionContext &context
 	if(hasFixedDelta) return false;
 	if(context.forwards)
 	{
-		if(labelOperand.jumpType == Operand::JumpType::Forward) return false;
+		if(labelOperand.jumpType == JumpType::Forward) return false;
 	}
 	else
 	{
-		if(labelOperand.jumpType == Operand::JumpType::Backward) return false;
+		if(labelOperand.jumpType == JumpType::Backward) return false;
 	}
 
 	ActionContext::ExpressionLabelMap::const_iterator it = context.expressionLabels.find(labelOperand.expressionIndex);
 	if(it == context.expressionLabels.end()) return false;
 	hasFoundTarget = true;
 
-	labelOperand.jumpType = context.forwards ? Operand::JumpType::Backward : Operand::JumpType::Forward;
+	labelOperand.jumpType = context.forwards ? JumpType::Backward : JumpType::Forward;
 
 	const ActionOffset anchorOffset = context.offset;
 	const ActionOffset targetOffset = it->second;
@@ -1704,22 +1318,22 @@ void PatchExpressionLabelAction::WriteByteCode(std::vector<uint8_t> &result, Act
 {
 	switch(labelOperand.jumpType)
 	{
-	case Operand::JumpType::Name:
+	case JumpType::Name:
 		throw AssemblerException("Internal error: Unexpected jumpType");
-	case Operand::JumpType::Forward:
+	case JumpType::Forward:
 		result.push_back((int) x64Assembler::ActionType::PatchExpressionLabelForward);
 		WriteExpressionOffset(result, context, labelOperand.expressionIndex);
 		result.push_back(bytes);
 		result.push_back(offset);
 		context.AddForwardLabelReference(labelOperand.reference);
 		break;
-	case Operand::JumpType::Backward:
+	case JumpType::Backward:
 		result.push_back((int) x64Assembler::ActionType::PatchExpressionLabelBackward);
 		WriteExpressionOffset(result, context, labelOperand.expressionIndex);
 		result.push_back(bytes);
 		result.push_back(offset);
 		break;
-	case Operand::JumpType::BackwardOrForward:
+	case JumpType::BackwardOrForward:
 		result.push_back((int) x64Assembler::ActionType::PatchExpressionLabel);
 		WriteExpressionOffset(result, context, labelOperand.expressionIndex);
 		result.push_back(bytes);
@@ -1743,11 +1357,6 @@ void PatchAbsoluteAddressAction::WriteByteCode(std::vector<uint8_t> &result, Act
 }
 
 //============================================================================
-
-void ExpressionAction::Dump() const
-{
-	printf(", #%d={%d}", numberOfBytes, expressionIndex);
-}
 
 void ExpressionAction::WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const
 {
@@ -1795,196 +1404,6 @@ void AddExpressionAction::WriteByteCode(std::vector<uint8_t> &result, ActionWrit
 
 //============================================================================
 
-AlternateAction::AlternateAction()
-{
-}
-
-AlternateAction::~AlternateAction()
-{
-	for(const Alternate &alternate : alternateList)
-	{
-		alternate.condition->Release();
-		delete alternate.action;
-	}
-}
-
-void AlternateAction::Dump() const
-{
-	printf(" (");
-
-	bool isFirst = true;
-	for(const Alternate &alternate : alternateList)
-	{
-		printf(isFirst ? "[%s]" : " | [%s]", alternate.condition->GetDescription().c_str());
-		isFirst = false;
-		alternate.action->Dump();
-	}
-
-	printf(")");
-}
-
-size_t AlternateAction::GetMinimumLength() const
-{
-	if(alternateList.size() == 0) return 0;
-	
-	size_t minimumLength = (size_t) -1;
-	for(const Alternate &alternate : alternateList)
-	{
-		size_t length = alternate.action->GetMinimumLength();
-		if(minimumLength > length) minimumLength = length;
-	}
-	return minimumLength;
-}
-
-size_t AlternateAction::GetMaximumLength() const
-{
-	size_t maximumLength = 0;
-	for(const Alternate &alternate : alternateList)
-	{
-		size_t length = alternate.action->GetMaximumLength();
-		if(maximumLength < length) maximumLength = length;
-	}
-	return maximumLength;
-}
-
-Action *AlternateAction::GetSingleAlternateAndClearAlternateList()
-{
-	assert(alternateList.size() == 1);
-	Action *action = alternateList[0].action;
-	alternateList[0].condition->Release();
-	alternateList.clear();
-	return action;
-}
-
-bool AlternateAction::IsLiteral() const
-{
-	return alternateList.size() == 1
-			&& alternateList[0].action->IsLiteral();
-}
-
-void AlternateAction::AppendToLiteral(LiteralAction *literal) const
-{
-	for(const Alternate& alternate : alternateList)
-	{
-		alternate.action->AppendToLiteral(literal);
-	}
-}
-
-void AlternateAction::Add(Action *action, const AlternateActionCondition *condition)
-{
-	for(const Alternate& alternate : alternateList)
-	{
-		if(alternate.condition->Equals(condition))
-		{
-			delete action;
-			condition->Release();
-			return;
-		}
-	}
-	
-	const Alternate alternate =
-	{
-		.condition = condition,
-		.action = action,
-	};
-	alternateList.push_back(alternate);
-}
-
-bool AlternateAction::ResolveRelativeAddresses(ActionContext &context)
-{
-	bool changed = false;
-	ActionOffset offset = context.offset;
-
-	for(int i = 0; i < alternateList.size(); ++i)
-	{
-		Alternate &alternate = alternateList[i];
-		
-		context.offset = offset;
-		if(context.forwards)
-		{
-			if(alternate.action->ResolveRelativeAddresses(context)) changed = true;
-		}
-
-		AlternateActionCondition::Result result = alternate.condition->IsValid(context, alternate.action);
-		
-		if(!context.forwards)
-		{
-			if(alternate.action->ResolveRelativeAddresses(context)) changed = true;
-		}
-		
-		switch(result)
-		{
-		case AlternateActionCondition::Result::Never:
-			// Remove this entry, and continue.
-			alternate.condition->Release();
-			delete alternate.action;
-			alternateList.erase(alternateList.begin()+i);
-			--i;
-			changed = true;
-			break;
-		case AlternateActionCondition::Result::Maybe:
-			break;
-		case AlternateActionCondition::Result::Always:
-			if(alternate.condition == &AlwaysAlternateActionCondition::instance) break;
-			alternate.condition->Release();
-			alternate.condition = &AlwaysAlternateActionCondition::instance;
-			for(int j = i+1; j < alternateList.size(); ++j)
-			{
-				alternateList[j].condition->Release();
-				delete alternateList[j].action;
-			}
-				
-			alternateList.erase(alternateList.begin()+i+1, alternateList.end());
-			changed = true;
-			goto end;
-		}
-		
-	}
-
-end:
-	context.offset = offset;
-	Action::ResolveRelativeAddresses(context);
-	
-	return changed;
-}
-
-bool AlternateAction::Simplify(ListAction *parent, size_t index)
-{
-	bool result = false;
-	for(size_t i = alternateList.size(); i != 0;)
-	{
-		--i;
-		if(alternateList[i].action->Simplify(nullptr, 0)) result = true;
-	}
-	
-	switch(alternateList.size())
-	{
-	case 0:
-		parent->RemoveActionAtIndex(index);
-		delete this;
-		return true;
-	case 1:
-		if(alternateList[0].condition == &AlwaysAlternateActionCondition::instance)
-		{
-			parent->ReplaceActionAtIndex(index, alternateList[0].action);
-			alternateList[0].condition->Release();
-			alternateList.clear();
-			delete this;
-			return true;
-		}
-		break;
-	}
-	return result;
-}
-
-void AlternateAction::DelayAndConsolidate()
-{
-	for(const Alternate& alternate : alternateList)
-	{
-		alternate.action->DelayAndConsolidate();
-	}
-}
-
 void AlternateAction::WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const
 {
 	// This builds:
@@ -2030,266 +1449,3 @@ void AlternateAction::WriteByteCode(std::vector<uint8_t> &result, ActionWriteCon
 
 //============================================================================
 
-ListAction::ListAction()
-{
-}
-
-ListAction::~ListAction()
-{
-	for(Action *action : actionList)
-	{
-		delete action;
-	}
-}
-
-void ListAction::Append(Action *action)
-{
-	if(action->IsLiteral()
-	   && actionList.size() > 0
-	   && actionList.back()->IsLiteralAction())
-	{
-		LiteralAction* lastLiteralAction = (LiteralAction*) actionList.back();
-		action->AppendToLiteral(lastLiteralAction);
-		delete action;
-	}
-	else
-	{
-		actionList.push_back(action);
-	}
-}
-
-void ListAction::Dump() const
-{
-	printf("[");
-	for(Action *action : actionList)
-	{
-		action->Dump();
-	}
-	printf("]");
-}
-
-size_t ListAction::GetMinimumLength() const
-{
-	size_t minimumLength = 0;
-	for(Action *action : actionList)
-	{
-		minimumLength += action->GetMinimumLength();
-	}
-	return minimumLength;
-}
-
-size_t ListAction::GetMaximumLength() const
-{
-	size_t maximumLength = 0;
-	for(Action *action : actionList)
-	{
-		maximumLength += action->GetMaximumLength();
-	}
-	return maximumLength;
-}
-
-bool ListAction::IsLiteral() const
-{
-	for(Action *action : actionList)
-	{
-		if(!action->IsLiteral()) return false;
-	}
-	return true;
-}
-
-void ListAction::DelayAndConsolidate()
-{
-	for(Action* action : actionList)
-	{
-		action->DelayAndConsolidate();
-	}
-	
-	// Step through all actions, and find out if there are
-	// actions that can be delayed past literals
-	std::vector<Action *> delayList;
-	bool needConsolidate = false;
-	int delay = 0;
-	int startDelayListIndex = 0;
-	for(int i = 0; i < actionList.size(); ++i)
-	{
-		Action *action = actionList[i];
-		if(action->IsLiteralAction())
-		{
-			if(delayList.size() == 0) continue;
-			LiteralAction *literalAction = (LiteralAction *)action;
-			if(!delayList[0]->CanDelay(delay + literalAction->GetNumberOfBytes()))
-			{
-				needConsolidate = true;
-				DelayActions(delayList, startDelayListIndex, i, delay);
-				delayList.clear();
-				delay = 0;
-			}
-			else
-			{
-				delay += literalAction->GetNumberOfBytes();
-			}
-		}
-		else if(action->CanDelay())
-		{
-			if(delayList.size() == 0) startDelayListIndex = i;
-			delayList.push_back(action);
-		}
-		else
-		{
-			// Not literal, and cannot delay.
-			if(delay != 0)
-			{
-				needConsolidate = true;
-				DelayActions(delayList, startDelayListIndex, i, delay);
-			}
-			if(delayList.size())
-			{
-				delayList.clear();
-				delay = 0;
-			}
-		}
-	}
-	if(delay != 0)
-	{
-		needConsolidate = true;
-		DelayActions(delayList, startDelayListIndex, (int) actionList.size(), delay);
-	}
-	
-	if(needConsolidate) ConsolidateLiteralActions();
-}
-
-void ListAction::DelayActions(const std::vector<Action *> &delayList, int startIndex, int toIndex, int delay)
-{
-	actionList.insert(actionList.begin()+toIndex, delayList.begin(), delayList.end());
-	int index = startIndex;
-	int delayListIndex = 0;
-	while(delayListIndex < delayList.size())
-	{
-		Action *action = actionList[index];
-		if(action == delayList[delayListIndex])
-		{
-			assert(action->CanDelay(delay));
-			action->Delay(delay);
-			actionList.erase(actionList.begin()+index);
-			++delayListIndex;
-			continue;
-		}
-		else if(action->IsLiteralAction())
-		{
-			delay -= action->GetMinimumLength();
-		}
-
-		++index;
-	}
-}
-
-void ListAction::ConsolidateLiteralActions()
-{
-	for(size_t i = actionList.size(); i >= 2; --i)
-	{
-		Action *a2 = actionList[i-1];
-		Action *a1 = actionList[i-2];
-		if(a1->IsLiteralAction() && a2->IsLiteralAction())
-		{
-			a2->AppendToLiteral((LiteralAction *) a1);
-			delete a2;
-			actionList.erase(actionList.begin() + i-1);
-		}
-	}
-}
-
-void ListAction::ResolveRelativeAddresses()
-{
-	bool changes;
-	do
-	{
-		changes = false;
-
-		{
-			ActionContext actionContext;
-			actionContext.forwards = true;
-			actionContext.offset.alignment = 0;
-			actionContext.offset.blockIndex = 0;
-			actionContext.offset.offsetIntoBlock = 0;
-			actionContext.offset.totalMinimumOffset = 0;
-			actionContext.offset.totalMaximumOffset = 0;
-			if(ResolveRelativeAddresses(actionContext)) changes = true;
-		}
-
-		{
-			ActionContext actionContext;
-			actionContext.forwards = false;
-			actionContext.offset.alignment = 0;
-			actionContext.offset.blockIndex = 0;
-			actionContext.offset.offsetIntoBlock = 0;
-			actionContext.offset.totalMinimumOffset = 0;
-			actionContext.offset.totalMaximumOffset = 0;
-			if(ResolveRelativeAddresses(actionContext)) changes = true;
-		}
-		
-		if(Simplify(nullptr, 0)) changes = true;
-		
-	} while(changes);
-}
-
-bool ListAction::Simplify(ListAction *parent, size_t index)
-{
-	bool changes = false;
-	for(size_t i = actionList.size(); i != 0;)
-	{
-		--i;
-		if(actionList[i]->Simplify(this, i)) changes = true;
-	}
-
-	if(!parent) return changes;
-
-	parent->ReplaceActionAtIndexWithList(index, actionList);
-	actionList.clear();
-	delete this;
-	return true;
-}
-
-void ListAction::ReplaceActionAtIndexWithList(size_t i, std::vector<Action*> &newActionList)
-{
-	actionList.erase(actionList.begin()+i);
-	actionList.insert(actionList.begin()+i, newActionList.begin(), newActionList.end());
-}
-
-bool ListAction::ResolveRelativeAddresses(ActionContext &context)
-{
-	bool changed = false;
-	if(context.forwards)
-	{
-		for(Action *action : actionList)
-		{
-			if(action->ResolveRelativeAddresses(context)) changed = true;
-		}
-	}
-	else
-	{
-		for(size_t i = actionList.size(); i != 0;)
-		{
-			--i;
-			if(actionList[i]->ResolveRelativeAddresses(context)) changed = true;
-		}
-	}
-	return changed;
-}
-
-void ListAction::AppendToLiteral(LiteralAction *literal) const
-{
-	for(Action *action : actionList)
-	{
-		action->AppendToLiteral(literal);
-	}
-}
-
-void ListAction::WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const
-{
-	for(Action *action : actionList)
-	{
-		action->WriteByteCode(result, context);
-	}
-}
-
-//============================================================================

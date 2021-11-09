@@ -1,6 +1,7 @@
 //============================================================================
 
 #include "Javelin/Assembler/JitLabelId.h"
+#include <string.h>
 
 //============================================================================
 
@@ -31,7 +32,13 @@ using namespace Javelin;
 		return (result << 2) | LabelType::Named;
 	}
 #else
-  #error "No GetLabelIdForNamed defined"
+    #include "JitHash.h"
+
+    uint32_t Javelin::GetLabelIdForNamed(const char *label)
+    {
+        uint32_t value = JitHash(label, strlen(label));
+        return (~value << 2) | LabelType::Named;
+    }
 #endif
 
 //============================================================================

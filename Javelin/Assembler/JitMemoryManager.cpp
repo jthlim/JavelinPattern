@@ -49,13 +49,19 @@ static size_t GetMapRegionLengthForLength(size_t length)
 void* SimpleJitMemoryManager::Allocate(size_t length)
 {
 #if defined(__i386__) || defined(__amd64__)
-	int mode = PROT_READ|PROT_WRITE|PROT_EXEC;
+    const int mode = PROT_READ|PROT_WRITE|PROT_EXEC;
 #else
-	int mode = PROT_READ|PROT_WRITE;
+    const int mode = PROT_READ|PROT_WRITE;
+#endif
+    
+#if defined(MAP_JIT)
+    const int flags = MAP_PRIVATE|MAP_ANONYMOUS|MAP_JIT;
+#else
+    const int flags = MAP_PRIVATE|MAP_ANONYMOUS;
 #endif
 	
 	size_t mapRegionLength = GetMapRegionLengthForLength(length + sizeof(SimpleJitMemoryManagerAllocationHeader));
-	void *mapRegion = mmap(0, mapRegionLength, mode, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+	void *mapRegion = mmap(0, mapRegionLength, mode, flags, -1, 0);
 	assert(mapRegion != MAP_FAILED);
 	SimpleJitMemoryManagerAllocationHeader* header = (SimpleJitMemoryManagerAllocationHeader*) mapRegion;
 	header->mapRegionLength = mapRegionLength;

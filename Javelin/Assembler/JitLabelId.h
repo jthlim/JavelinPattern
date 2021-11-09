@@ -1,6 +1,7 @@
 //============================================================================
 
 #pragma once
+#include "JitHash.h"
 #include <stdint.h>
 
 //============================================================================
@@ -32,6 +33,8 @@ namespace Javelin
 	// For use by build time assembler
 	inline int64_t  GetLabelIdForNumeric(int64_t label) 	    { return (label << 2) | LabelType::Numeric; }
 	inline uint32_t GetLabelIdForGlobalNumeric(int64_t label) 	{ return uint32_t((label << 2) | LabelType::Numeric); }
+
+    #define JASM_LABEL_ID(x) ((~JIT_HASH(x) << 2) | Javelin::LabelType::Named)
 
 //============================================================================
 } // namespace Javelin

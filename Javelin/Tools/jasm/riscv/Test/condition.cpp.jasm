@@ -1,0 +1,33 @@
+#include <stdio.h>
+#include "Javelin/Assembler/Assembler.h"
+
+static int (*CreateFunction(int a))(int)
+{
+  Javelin::Assembler assembler;
+  
+  » .if {a}
+  »   addi a0, a0, {a}
+  » .else
+  »   addi a0, a0, -1
+  » .endif
+  » ret
+
+  return (int(*)(int)) assembler.Build();
+}
+
+int main()
+{
+  int (*func0)(int) = CreateFunction(0);
+  printf("%p\n", func0);
+
+  int (*func1)(int) = CreateFunction(1);
+  printf("%p\n", func1);
+
+  for (int i = 0; i < 5; ++i) {
+    printf("func0(%d): %d\n", i, func0(i));
+    printf("func1(%d): %d\n", i, func1(i));
+  }
+  
+  return 0;
+}
+

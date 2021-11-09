@@ -2,6 +2,7 @@
 
 #pragma once
 #include "Javelin/Tools/jasm/x64/Instruction.h"
+#include "Javelin/Tools/jasm/Common/Action.h"
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -13,270 +14,86 @@ namespace Javelin::Assembler::x64
 {
 //============================================================================
 
-	class Action;
-	class ListAction;
-	class LiteralAction;
-	class PatchLabelAction;
+    using Common::ActionOffset;
+    using Common::ActionContext;
+    using Common::ActionWriteContext;
 
 //============================================================================
-	
-	struct ActionOffset
+
+    using Common::AlternateActionCondition;
+    using Common::AndAlternateActionCondition;
+
+    class AlwaysAlternateActionCondition : public Common::AlwaysAlternateActionCondition
+    {
+    public:
+        static const AlternateActionCondition* Create(const Operand *operand) { return &instance; }
+    };
+
+    class NeverAlternateActionCondition : public Common::NeverAlternateActionCondition
+    {
+    public:
+        static const AlternateActionCondition* Create(const Operand *operand) { return &instance; }
+    };
+
+	class ZeroAlternateActionCondition : public Common::ZeroAlternateActionCondition
 	{
-		// This is incremented every time a variable length instruction is encountered.
-		int blockIndex;
-		
-		// Alignment, if any. A variable length instruction will reset this to 0.
-		int alignment;
-		
-		//
-		size_t offsetIntoBlock;
-		
-		size_t totalMinimumOffset;
-		size_t totalMaximumOffset;
+    private:
+        typedef Common::ZeroAlternateActionCondition Inherited;
+        
+	public:
+		constexpr ZeroAlternateActionCondition(int aExpressionIndex) : Inherited(aExpressionIndex) { }
+        
+		static const AlternateActionCondition* Create(const Operand *operand);
+
+        virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context, const Action &action) const final;
 	};
-	
-	struct ActionContext
-	{
-		bool forwards;
-		ActionOffset offset;
 
-		typedef std::unordered_map<std::string, ActionOffset> NamedLabelMap;
-		NamedLabelMap namedLabels;
-
-		typedef std::unordered_map<int64_t, ActionOffset> NumericLabelMap;
-		NumericLabelMap numericLabels;
-
-		typedef std::unordered_map<int64_t, ActionOffset> ExpressionLabelMap;
-		ExpressionLabelMap expressionLabels;
-
-		typedef std::unordered_set<std::string> NamedReferenceSet;
-		NamedReferenceSet namedReferenceSet;
-
-		typedef std::unordered_set<int64_t> NumericReferenceSet;
-		NumericReferenceSet numericReferenceSet;
-
-		std::string assemblerVariableName;
-	};
-	
-	struct ActionWriteContext
-	{
-		ActionWriteContext(bool aIsDataSegment, const std::string& variableName) : isDataSegment(aIsDataSegment) { SetVariableName(variableName); }
-
-		bool isDataSegment;
-		std::string variableName;
-		std::string assemblerCallPrefix;
-
-		void SetVariableName(const std::string &aVariableName) {
-			variableName = aVariableName;
-			if (isDataSegment)
-			{
-				assemblerCallPrefix = variableName + ".GetDataSegmentAssembler().";
-			}
-			else
-			{
-				assemblerCallPrefix = variableName + ".";
-			}
-		}
-		const char *GetAssemblerCallPrefix() const {
-			return assemblerCallPrefix.c_str();
-		}		
-		
-		int numberOfLabels = 0;
-
-		struct ExpressionInfo
-		{
-			int bitWidth;
-			int index;
-			int offset;
-			int sourceLine;
-			int fileIndex;
-			std::string expression;
-		};
-		std::vector<ExpressionInfo> expressionInfo;
-		
-		// Maps label reference -> expressionLabelIndex.
-		std::unordered_map<size_t, int> forwardLabelReferences;
-
-		std::unordered_set<uint32_t> forwardLabelReferenceSet;
-
-		// Maps labelId -> index
-		std::unordered_map<int64_t, int> labelIdToIndexMap;
-		
-		int GetNumberOfForwardLabelReferences() const { return (int) forwardLabelReferenceSet.size(); }
-		
-		void AddForwardLabelReference(uint32_t reference)
-		{
-			forwardLabelReferenceSet.insert(reference);
-		}
-		
-		int GetForwardLabelReferenceIndex(int32_t reference, int numBytes)
-		{
-			size_t key = size_t(reference) | (size_t(numBytes) << 56);
-			
-			const auto it = forwardLabelReferences.find(key);
-			if(it != forwardLabelReferences.end()) return it->second;
-			int index = (int) forwardLabelReferences.size();
-			forwardLabelReferences[key] = index;
-			forwardLabelReferenceSet.insert(reference);
-			return index;
-		}
-		
-		int GetIndexForLabelId(int64_t labelId)
-		{
-			const auto it = labelIdToIndexMap.find(labelId);
-			if(it != labelIdToIndexMap.end()) return it->second;
-			int index = int(labelIdToIndexMap.size());
-			labelIdToIndexMap[labelId] = index;
-			return index;
-		}
-	};
-	
-//============================================================================
-
-	class AlternateActionCondition
+	class Imm8AlternateActionCondition : public Common::ImmediateAlternateActionCondition
 	{
 	public:
-		enum class Result
-		{
-			Never,
-			Maybe,
-			Always,
-		};
-		
-		virtual ~AlternateActionCondition() { }
-		
-		virtual Result IsValid(ActionContext &context, const Action *action) const = 0;
-		virtual std::string GetDescription() const = 0;
-		
-		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context, const Action &action) const = 0;
-		virtual void Release() const { delete this; }
-		virtual bool Equals(const AlternateActionCondition *other) const;
-		
-	protected:
-		constexpr AlternateActionCondition() { }
-		
-	private:
-		AlternateActionCondition(const AlternateActionCondition&) = delete;
-		void operator=(const AlternateActionCondition&) = delete;
-	};
-	
-	class AndAlternateActionCondition : public AlternateActionCondition
-	{
-	public:
-		~AndAlternateActionCondition();
-		
-		virtual Result IsValid(ActionContext &context, const Action *action) const final;
-		virtual std::string GetDescription() const final;
-		virtual bool Equals(const AlternateActionCondition *other) const;
-
-		size_t GetNumberOfConditions() const							{ return conditionList.size(); }
-		void ClearConditions()											{ conditionList.clear(); }
-		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context, const Action &action) const final;
-
-		const AlternateActionCondition *GetCondition(size_t i) const 	{ return conditionList[i]; }
-		void AddCondition(const AlternateActionCondition *condition)	{ conditionList.push_back(condition); }
-		
-	private:
-		std::vector<const AlternateActionCondition*> conditionList;
-	};
-	
-	class AlwaysAlternateActionCondition : public AlternateActionCondition
-	{
-	public:
-		virtual Result IsValid(ActionContext &context, const Action *action) const final	{ return Result::Always; 		}
-		virtual std::string GetDescription() const final						 			{ return "Always";	}
-		virtual void Release() const 														{  }
-		
-		// Do nothing. "Always" needs no extra byte code.
-		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context, const Action &action) const final;
-
-		static const AlternateActionCondition* Create(const Operand *operand)				{ return &instance; }
-		static const AlwaysAlternateActionCondition instance;
-
-	private:
-		constexpr AlwaysAlternateActionCondition() { }
-	};
-
-	class NeverAlternateActionCondition : public AlternateActionCondition
-	{
-	public:
-		virtual Result IsValid(ActionContext &context, const Action *action) const final	{ return Result::Never; 	}
-		virtual std::string GetDescription() const final						 			{ return "Never";	}
-		virtual void Release() const 														{  }
-		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context, const Action &action) const final;
-
-		static const AlternateActionCondition* Create(const Operand *operand)				{ return &instance; }
-		static const NeverAlternateActionCondition instance;
-
-	private:
-		constexpr NeverAlternateActionCondition() { }
-	};
-	
-	class ImmediateAlternateActionCondition : public AlternateActionCondition
-	{
-	public:
-		virtual bool Equals(const AlternateActionCondition *other) const;
-		virtual Result IsValid(ActionContext &context, const Action *action) const final	{ return Result::Maybe;		}
-
-	protected:
-		constexpr ImmediateAlternateActionCondition(int aExpressionIndex) : expressionIndex(aExpressionIndex) { }
-		int expressionIndex;
-
-		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context, const Action &action, int opcode) const;
-	};
-
-	class ZeroAlternateActionCondition : public ImmediateAlternateActionCondition
-	{
-	public:
-		constexpr ZeroAlternateActionCondition(int aExpressionIndex) : ImmediateAlternateActionCondition(aExpressionIndex) { }
+        using Common::ImmediateAlternateActionCondition::ImmediateAlternateActionCondition;
+        
 		static const AlternateActionCondition* Create(const Operand *operand);
 
 		virtual std::string GetDescription() const final;
 		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context, const Action &action) const final;
 	};
 
-	class Imm8AlternateActionCondition : public ImmediateAlternateActionCondition
+	class Imm16AlternateActionCondition : public Common::ImmediateAlternateActionCondition
 	{
 	public:
-		constexpr Imm8AlternateActionCondition(int expressionIndex) : ImmediateAlternateActionCondition(expressionIndex) { }
-		static const AlternateActionCondition* Create(const Operand *operand);
+        using Common::ImmediateAlternateActionCondition::ImmediateAlternateActionCondition;
+
+        static const AlternateActionCondition* Create(const Operand *operand);
 
 		virtual std::string GetDescription() const final;
 		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context, const Action &action) const final;
 	};
 
-	class Imm16AlternateActionCondition : public ImmediateAlternateActionCondition
+	class Imm32AlternateActionCondition : public Common::ImmediateAlternateActionCondition
 	{
 	public:
-		constexpr Imm16AlternateActionCondition(int expressionIndex) : ImmediateAlternateActionCondition(expressionIndex) { }
-		static const AlternateActionCondition* Create(const Operand *operand);
+        using Common::ImmediateAlternateActionCondition::ImmediateAlternateActionCondition;
+
+        static const AlternateActionCondition* Create(const Operand *operand);
 
 		virtual std::string GetDescription() const final;
 		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context, const Action &action) const final;
 	};
 
-	class Imm32AlternateActionCondition : public ImmediateAlternateActionCondition
+	class UImm32AlternateActionCondition : public Common::ImmediateAlternateActionCondition
 	{
 	public:
-		constexpr Imm32AlternateActionCondition(int expressionIndex) : ImmediateAlternateActionCondition(expressionIndex) { }
-		static const AlternateActionCondition* Create(const Operand *operand);
+        using Common::ImmediateAlternateActionCondition::ImmediateAlternateActionCondition;
 
-		virtual std::string GetDescription() const final;
-		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context, const Action &action) const final;
-	};
-
-	class UImm32AlternateActionCondition : public ImmediateAlternateActionCondition
-	{
-	public:
-		constexpr UImm32AlternateActionCondition(int expressionIndex) : ImmediateAlternateActionCondition(expressionIndex) { }
-		static const AlternateActionCondition* Create(const Operand *operand);
+        static const AlternateActionCondition* Create(const Operand *operand);
 
 		virtual std::string GetDescription() const final;
 		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context, const Action &action) const final;
 	};
 	
 	// Calculates a relative address from the end of action, and returns true if it fits into a SImm8 value.
-	class Rel8AlternateActionCondition : public AlternateActionCondition
+	class Rel8AlternateActionCondition : public Common::AlternateActionCondition
 	{
 	public:
 		virtual Result IsValid(ActionContext &context, const Action *action) const final;
@@ -290,7 +107,7 @@ namespace Javelin::Assembler::x64
 		Rel8AlternateActionCondition(const LabelOperand &aLabelOperand);
 		
 		LabelOperand labelOperand;
-		Result IsValidForJumpType(ActionContext &context, Operand::JumpType jumpType) const;
+		Result IsValidForJumpType(ActionContext &context, JumpType jumpType) const;
 		
 		static Result IsValid(const ActionOffset &anchorOffset, const ActionOffset &destinationOffset);
 	};
@@ -309,117 +126,40 @@ namespace Javelin::Assembler::x64
 		Rel32AlternateActionCondition(const LabelOperand &aLabelOperand);
 		
 		LabelOperand labelOperand;
-		Result IsValidForJumpType(ActionContext &context, Operand::JumpType jumpType) const;
+		Result IsValidForJumpType(ActionContext &context, JumpType jumpType) const;
 		
 		static Result IsValid(const ActionOffset &anchorOffset, const ActionOffset &destinationOffset);
 	};
 	
-	class Delta32AlternateActionCondition : public ImmediateAlternateActionCondition
+	class Delta32AlternateActionCondition : public Common::ImmediateAlternateActionCondition
 	{
 	public:
-		constexpr Delta32AlternateActionCondition(int expressionIndex) : ImmediateAlternateActionCondition(expressionIndex) { }
-		
+        Delta32AlternateActionCondition(int expressionIndex) : Common::ImmediateAlternateActionCondition(expressionIndex) { }
+
 		virtual std::string GetDescription() const final;
 		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context, const Action &action) const final;
 	};
 	
 //============================================================================
 
-	class Action
-	{
-	public:
-		virtual ~Action() { }
-		
-		virtual bool IsLiteral() const { return false; }
-		virtual bool IsLiteralAction() const { return false; }
-		virtual void Dump() const = 0;
-		virtual void AppendToLiteral(LiteralAction *literal) const { }
-		virtual const Action *GetLastAction() const { return this; }
-		virtual size_t GetMinimumLength() const = 0;
-		virtual size_t GetMaximumLength() const = 0;
-		virtual bool CanDelay(int amount) const { return false; }
-		virtual void Delay(int amount) { }
-		virtual void DelayAndConsolidate() { }
-
-		virtual bool ResolveRelativeAddresses(ActionContext &context);
-		virtual bool Simplify(ListAction *parent, size_t index) { return false; }
-
-		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const = 0;
-
-		bool CanDelay() const { return CanDelay(0); }
-
-		static void WriteSigned32(std::vector<uint8_t> &result, int32_t value) { WriteUnsigned32(result, value); }
-		static void WriteUnsigned32(std::vector<uint8_t> &result, uint32_t value);
-		static void WriteUnsignedVLE(std::vector<uint8_t> &result, uint32_t value);
-		static void WriteSignedVLE(std::vector<uint8_t> &result, int32_t value);
-		static void WriteExpressionOffset(std::vector<uint8_t> &result, const ActionWriteContext &context, int expressionIndex);
-		
-	protected:
-		Action() = default;
-		ActionOffset actionOffset;
-
-	private:
-		Action(const Action&) = delete;
-		void operator=(const Action&) = delete;
-	};
-
-	class EmptyAction : public Action
-	{
-	public:
-		virtual size_t GetMinimumLength() const final { return 0; }
-		virtual size_t GetMaximumLength() const final { return 0; }
-	};
+    using Common::Action;
+    using Common::EmptyAction;
+    using Common::SetAssemblerVariableNameAction;
 	
-	class SetAssemblerVariableNameAction : public EmptyAction
+	class LiteralAction : public Common::LiteralAction
 	{
 	public:
-		SetAssemblerVariableNameAction(const std::string &aVariableName) : variableName(aVariableName) { }
-
-		void Dump() const;
-		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const final { }
-
-	private:
-		std::string variableName;
-	};
-	
-	class LiteralAction : public Action
-	{
-	public:
-		LiteralAction(const std::vector<uint8_t> &aBytes);
-		~LiteralAction();
+        using Common::LiteralAction::LiteralAction;
 		
-		virtual bool IsLiteral() const final { return true; }
-		virtual bool IsLiteralAction() const { return true; }
-		virtual void Dump() const final;
 		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const final;
-		bool Simplify(ListAction *parent, size_t index) final;
-
-		virtual void AppendToLiteral(LiteralAction *literal) const final;
-		
-		virtual size_t GetMinimumLength() const final { return bytes.size(); }
-		virtual size_t GetMaximumLength() const final { return bytes.size(); }
-
-		int GetNumberOfBytes() const { return int(bytes.size()); }
-		void AppendBytes(const std::vector<uint8_t>& literalBytes);
-		void AppendBytes(const uint8_t *bytes, size_t length);
-
-	private:
-		std::vector<uint8_t> bytes;
-		
-		friend class PatchLabelAction;
 	};
 
-	class DelayableAction : public EmptyAction
-	{
-	public:
-		DelayableAction(int initialDelay) : delay(initialDelay) { }
-		virtual bool CanDelay(int amount) const final { return amount + delay < 256; }
-		virtual void Delay(int amount) final { delay += amount; }
-			
-	protected:
-		int delay;
-	};
-		
+    class DelayableAction : public Common::DelayableAction
+    {
+    public:
+        DelayableAction(int initialDelay) : Common::DelayableAction(initialDelay, 256) { }
+    };
+
 	class PatchAbsoluteAddressAction : public DelayableAction
 	{
 	public:
@@ -429,20 +169,12 @@ namespace Javelin::Assembler::x64
 		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const final;
 	};
 			
-	class ExpressionAction : public Action
+	class ExpressionAction : public Common::ExpressionAction
 	{
 	public:
-		ExpressionAction(uint8_t aNumberOfBytes, int aExpressionIndex)
-		  : numberOfBytes(aNumberOfBytes), expressionIndex(aExpressionIndex) { }
+        using Common::ExpressionAction::ExpressionAction;
 
-		virtual void Dump() const override;
-		virtual size_t GetMinimumLength() const override { return numberOfBytes; }
-		virtual size_t GetMaximumLength() const override { return numberOfBytes; }
 		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const override;
-
-	protected:
-		uint8_t numberOfBytes;
-		int expressionIndex;
 	};
 	
 	class DeltaExpressionAction : public ExpressionAction
@@ -469,70 +201,28 @@ namespace Javelin::Assembler::x64
 		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const final;
 	};
 	
-	class LabelAction : public EmptyAction
+	class NamedLabelAction : public Common::NamedLabelAction
 	{
 	public:
-		LabelAction(bool aGlobal) : global(aGlobal) { }
+        using Common::NamedLabelAction::NamedLabelAction;
 
-	protected:
-		bool global;
-		bool hasReference = false;
-		
-	private:
-		bool Simplify(ListAction *parent, size_t index) final;
+        virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const final;
 	};
 	
-	class NamedLabelAction : public LabelAction
+	class NumericLabelAction : public Common::NumericLabelAction
 	{
-	private:
-		typedef LabelAction Inherited;
-		
 	public:
-		NamedLabelAction(bool global, std::string aValue, int aAccessWidth=0)
-		  : Inherited(global), value(aValue), accessWidth(aAccessWidth) { }
-		
-		virtual void Dump() const final;
-		virtual bool ResolveRelativeAddresses(ActionContext &context) final;
-		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const final;
+        using Common::NumericLabelAction::NumericLabelAction;
 
-	private:
-		int accessWidth;
-		std::string value;
+		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const final;
 	};
 	
-	class NumericLabelAction : public LabelAction
+class ExpressionLabelAction : public Common::ExpressionLabelAction
 	{
-	private:
-		typedef LabelAction Inherited;
-		
 	public:
-		NumericLabelAction(bool global, int64_t aValue)
-		  : Inherited(global), value(aValue) { }
+        using Common::ExpressionLabelAction::ExpressionLabelAction;
 
-		virtual void Dump() const final;
-
-		virtual bool ResolveRelativeAddresses(ActionContext &context) final;
 		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const final;
-
-	private:
-		int64_t value;
-	};
-	
-	class ExpressionLabelAction : public LabelAction
-	{
-	private:
-		typedef LabelAction Inherited;
-		
-	public:
-		ExpressionLabelAction(int aExpressionIndex)
-		  : Inherited(true), expressionIndex(aExpressionIndex) { }
-
-		virtual void Dump() const final;
-		virtual bool ResolveRelativeAddresses(ActionContext &context) final;
-		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const final;
-
-	private:
-		int expressionIndex;
 	};
 	
 	class PatchLabelAction : public EmptyAction
@@ -552,7 +242,7 @@ namespace Javelin::Assembler::x64
 		LabelOperand labelOperand;
 
 	private:
-		bool Simplify(ListAction *parent, size_t index) final;
+		bool Simplify(Common::ListAction *parent, size_t index) final;
 		
 		friend class Rel8AlternateActionCondition;
 	};
@@ -604,61 +294,27 @@ namespace Javelin::Assembler::x64
 		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const final;
 	};
 
-	class AlignedAction : public EmptyAction
+    using Common::AlignedAction;
+
+	class AlignAction : public Common::AlignAction
 	{
 	public:
-		AlignedAction(int aAlignment) : alignment(aAlignment) { }
-		
-		virtual void Dump() const final;
-		
-		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const final;
-		
-	private:
-		int alignment;
-		virtual bool ResolveRelativeAddresses(ActionContext &context) override;
+        using Common::AlignAction::AlignAction;
+
+        virtual bool Simplify(Common::ListAction *parent, size_t index) final;
+        virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const final;
 	};
 
-	class AlignAction : public Action
+	class UnalignAction : public Common::UnalignAction
 	{
 	public:
-		AlignAction(int aAlignment) : alignment(aAlignment) { }
+        using Common::UnalignAction::UnalignAction;
 
-		virtual void Dump() const final;
-
-		virtual size_t GetMinimumLength() const final;
-		virtual size_t GetMaximumLength() const final;
-		virtual bool Simplify(ListAction *parent, size_t index) final;
-		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const final;
-
-	private:
-		int alignment;
-		bool isFixed = false;
-		int fixedLength = 0;
-
-		virtual bool ResolveRelativeAddresses(ActionContext &context) override;
-	};
-
-	class UnalignAction : public Action
-	{
-	public:
-		UnalignAction(int aAlignment) : alignment(aAlignment) { }
-		
-		virtual void Dump() const final;
-		
-		virtual size_t GetMinimumLength() const final;
-		virtual size_t GetMaximumLength() const final;
-		virtual bool Simplify(ListAction *parent, size_t index) final;
-		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const final;
-		
-	private:
-		int alignment;
-		bool isFixed = false;
-		int fixedLength = 0;
-		
-		virtual bool ResolveRelativeAddresses(ActionContext &context) override;
+        virtual bool Simplify(Common::ListAction *parent, size_t index) final;
+        virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const final;
 	};
 	
-	class DynamicOpcodeR : public Action
+	class DynamicOpcodeR : public Common::Action
 	{
 	public:
 		DynamicOpcodeR(uint8_t aRex,
@@ -682,7 +338,7 @@ namespace Javelin::Assembler::x64
 		std::vector<uint8_t> opcodes;
 	};
 	
-	class DynamicOpcodeRR : public Action
+	class DynamicOpcodeRR : public Common::Action
 	{
 	public:
 		DynamicOpcodeRR(uint8_t aRex,
@@ -879,78 +535,15 @@ namespace Javelin::Assembler::x64
 		std::vector<uint8_t> opcodes;
 	};
 
-	class AlternateAction : public Action
+    class AlternateAction : public Common::AlternateAction
 	{
 	public:
-		AlternateAction();
-		~AlternateAction();
-
-		virtual bool IsLiteral() const final;
-		virtual void AppendToLiteral(LiteralAction *literal) const final;
-		virtual void DelayAndConsolidate() final;
-
-		virtual size_t GetMinimumLength() const final;
-		virtual size_t GetMaximumLength() const final;
-
-		virtual void Dump() const final;
 		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const final;
-
-		size_t GetNumberOfAlternates() const	{ return alternateList.size(); }
-
-		Action *GetSingleAlternateAndClearAlternateList();
-		
-		void Add(Action *action, const AlternateActionCondition *condition);
-
-	private:
-		struct Alternate
-		{
-			const AlternateActionCondition*	condition;
-			Action*				 			action;
-		};
-		std::vector<Alternate> alternateList;
-
-		bool Simplify(ListAction *parent, size_t index) final;
-		bool ResolveRelativeAddresses(ActionContext &context) final;
 	};
 
-	class ListAction : public Action
+	class ListAction : public Common::ListAction
 	{
-	public:
-		ListAction();
-		~ListAction();
-		
-		virtual bool IsLiteral() const final;
-		virtual void AppendToLiteral(LiteralAction *literal) const final;
-
-		virtual size_t GetMinimumLength() const final;
-		virtual size_t GetMaximumLength() const final;
-		
-		void ResolveRelativeAddresses();
-
-		void Append(Action *action);
-		virtual void Dump() const final;
-		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context) const final;
-		virtual const Action *GetLastAction() const final { return actionList.size() ? actionList.back() : nullptr; }
-
-		virtual void DelayAndConsolidate() final;
-
-		bool HasData() const { return !actionList.empty(); }
-		
-		Action *GetActionAtIndex(size_t i) const { return actionList[i]; }
-		void RemoveActionAtIndex(size_t i) { actionList.erase(actionList.begin()+i); }
-		void ReplaceActionAtIndex(size_t i, Action *a) { actionList[i] = a; }
-		void ReplaceActionAtIndexWithList(size_t i, std::vector<Action*> &actionList);
-
-	private:
-		std::vector<Action*> 			actionList;
-		std::unordered_set<int64_t>		numericLabelSet;
-		std::unordered_set<std::string>	namedLabelSet;
-
-		bool Simplify(ListAction *parent, size_t index) final;
-		bool ResolveRelativeAddresses(ActionContext &context) final;
-
-		void DelayActions(const std::vector<Action *> &delayList, int startIndex, int toIndex, int delay);
-		void ConsolidateLiteralActions();
+    public:
 	};
 
 //============================================================================

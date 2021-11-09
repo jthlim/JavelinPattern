@@ -1,0 +1,28 @@
+#include <stdio.h>
+#include "Javelin/Assembler/Assembler.h"
+
+static void (*CreateFunction(int a))()
+{
+  Javelin::Assembler assembler;
+  
+  » .if {a}
+  »   mov rax, {a}
+  » .else
+  »   xor eax, eax
+  » .endif
+  » ret
+
+  return (void(*)()) assembler.Build();
+}
+
+int main()
+{
+  void (*func0)() = CreateFunction(0);
+  printf("%p\n", func0);
+
+  void (*func1)() = CreateFunction(1);
+  printf("%p\n", func1);
+
+  return 0;
+}
+

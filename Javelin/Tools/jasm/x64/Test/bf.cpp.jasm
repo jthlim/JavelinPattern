@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <sys/time.h>
 
+#define RUN_BUILD_BENCHMARK 0
+
 #define TAPE_SIZE 32768
 #define MAX_NESTING 100
 
@@ -243,54 +245,76 @@ static unsigned char bf_getchar()
 
 static void bf_run(const char* program)
 {
-  Javelin::Assembler assembler;
-  
-  » push rbx
-  » push rbp           // For stack alignment
-  » push r14
-  » mov p, [rdi]       // p = tape
-  » mov rbp, [rdi+8]   // rbp = putch
-  » mov r14, [rdi+16]  // r14 = getch
-  bf_compile(program, assembler);
-  » pop r14
-  » pop rbp
-  » pop rbx
-  » ret
+#if RUN_BUILD_BENCHMARK
+  for(int i = 0; i < 40000; ++i)
+#endif
+  {
+    Javelin::Assembler assembler;
+    
+#if !RUN_BUILD_BENCHMARK
+    uint64_t startParse = GetMicroTime();
+#endif
+    » push rbx
+    » push rbp           // For stack alignment
+    » push r14
+    » mov p, [rdi]       // p = tape
+    » mov rbp, [rdi+8]   // rbp = putch
+    » mov r14, [rdi+16]  // r14 = getch
+    bf_compile(program, assembler);
+    » pop r14
+    » pop rbp
+    » pop rbx
+    » ret
 
-  void (*function)(bf_state_t*) = (void(*)(bf_state_t*))assembler.Build();
+#if !RUN_BUILD_BENCHMARK
+    uint64_t endParse = GetMicroTime();
+    printf("Parse time: %lluus\n", endParse - startParse);
 
-  bf_state_t state;
-  state.tape = tape;
-  state.get_ch = bf_getchar;
-  state.put_ch = bf_putchar;
-  function(&state);
+    uint64_t startBuild = GetMicroTime();
+#endif
+    void (*function)(bf_state_t*) = (void(*)(bf_state_t*))assembler.Build();
+#if !RUN_BUILD_BENCHMARK
+    uint64_t endBuild = GetMicroTime();
+    printf("Build time: %lluus\n", endBuild - startBuild);
 
-  Javelin::SimpleJitMemoryManager::StaticInstanceRelease((void*) function);
+    bf_state_t state;
+    state.tape = tape;
+    state.get_ch = bf_getchar;
+    state.put_ch = bf_putchar;
+    function(&state);
+#endif
+    Javelin::SimpleJitMemoryManager::StaticInstanceRelease((void*) function);
+  }
 }
 
 int main(int argc, char** argv)
 {
-  uint64_t start = GetMicroTime();
-  if(argc == 2) {
-    long sz;
-    char* program;
-    FILE* f = fopen(argv[1], "r");
-    if(!f) {
-      fprintf(stderr, "Cannot open %s\n", argv[1]);
+#if RUN_BUILD_BENCHMARK
+  for(int i = 0; i < 10; ++i)
+#endif
+  {
+    uint64_t start = GetMicroTime();
+    if(argc == 2) {
+      long sz;
+      char* program;
+      FILE* f = fopen(argv[1], "r");
+      if(!f) {
+        fprintf(stderr, "Cannot open %s\n", argv[1]);
+        return 1;
+      }
+      fseek(f, 0, SEEK_END);
+      sz = ftell(f);
+      program = (char*)malloc(sz + 1);
+      fseek(f, 0, SEEK_SET);
+      program[fread(program, 1, sz, f)] = 0;
+      fclose(f);
+      bf_run(program);
+      uint64_t end = GetMicroTime();
+      printf("Execution time: %lluus\n", end-start);
+    } else {
+      fprintf(stderr, "Usage: %s INFILE.bf\n", argv[0]);
       return 1;
     }
-    fseek(f, 0, SEEK_END);
-    sz = ftell(f);
-    program = (char*)malloc(sz + 1);
-    fseek(f, 0, SEEK_SET);
-    program[fread(program, 1, sz, f)] = 0;
-    fclose(f);
-    bf_run(program);
-    uint64_t end = GetMicroTime();
-    printf("Execution time: %lluus\n", end-start);
-  } else {
-    fprintf(stderr, "Usage: %s INFILE.bf\n", argv[0]);
-    return 1;
   }
   return 0;
 }

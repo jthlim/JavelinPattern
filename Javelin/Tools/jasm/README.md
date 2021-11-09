@@ -76,7 +76,7 @@ The cost of this is having an extra step at build time.
 
 # Features
 
-* x64 and arm64 support
+* x64, arm64 and initial riscv support
 
 * Source level debugging
  
@@ -529,3 +529,29 @@ Example:
 * `delta21{` _expr_ `}` or  `adr{` _expr_ `}`
 * `delta26x4{` _expr_ `}` 
 * `adrp{` _expr_ `}`
+
+### risc-v
+
+Many instructions supported from:
+
+* rv32i
+* rv64i
+* M multiply extension
+* C compressed instruction extension
+* F,D,Q floating point extensions
+
+#### Literals
+
+* `.byte`: Single byte
+* `.hword`: Two bytes (half word)
+* `.word`: Four bytes
+* `.quad`: Eight Bytes
+
+#### Parameterized operands
+
+The following keywords are used for parameterized registers:
+
+* General Purpose Registers
+  * `regx` 
+  * `regf`
+

@@ -1,6 +1,7 @@
 //============================================================================
 
 #pragma once
+#include "Javelin/Tools/jasm/Common/Action.h"
 #include "Javelin/Tools/jasm/x64/Encoder.h"
 #include <string>
 #include <unordered_map>
@@ -12,7 +13,7 @@ namespace Javelin::Assembler::x64
 {
 //============================================================================
 
-	class Action;
+	using Common::Action;
 	class Assembler;
 	class ListAction;
 
@@ -61,14 +62,6 @@ namespace Javelin::Assembler::x64
 			Label,
 		};
 		
-		enum class JumpType : uint8_t
-		{
-			Name,				// Use labelName
-			Backward,			// Use labelValue
-			Forward,			// Use labelValue
-			BackwardOrForward,	// Use labelValue
-		};
-
 		enum class ImmediateType : uint8_t
 		{
 			Integer,

@@ -3,6 +3,7 @@
 #include "Javelin/Tools/jasm/arm64/Encoder.h"
 
 #include "Javelin/Assembler/arm64/ActionType.h"
+#include "Javelin/Assembler/BitUtility.h"
 #include "Javelin/Tools/jasm/arm64/Action.h"
 #include "Javelin/Tools/jasm/arm64/Assembler.h"
 #include "Javelin/Tools/jasm/arm64/Register.h"
@@ -1121,7 +1122,7 @@ namespace Javelin::Assembler::arm64::Encoders
 		{
 			assert(imm->value % encodingVariant.data == 0);
 			int immValue = int(imm->value / encodingVariant.data);
-			assert((immValue >> 7) == 0 || (immValue >> 7) == -1);
+            assert(BitUtility::IsValidSignedImmediate(immValue, 7));
 
 			immValue &= 0x7f;
 			
@@ -1648,7 +1649,7 @@ namespace Javelin::Assembler::arm64::Encoders
 				if(imm->value <= 0 || imm->value > maxShift) throw AssemblerException("Fixed point shift must be between #1 and #%d", maxShift);
 				
 				int mask = (16 << fpSize) - 1;
-				int immValue = -imm->value & mask;
+				int immValue = (uint32_t) (-imm->value & mask);
 				opcode |= immValue << 16;
 			}
 		}

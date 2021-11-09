@@ -1,0 +1,1468 @@
+#include "Javelin/Assembler/x64/Assembler.h"
+#include <assert.h>
+#include <stdio.h>
+
+// » cvtpd2pi mm4, xmm11
+static void (*CreateX87Test())()
+{
+  Javelin::Assembler assembler;
+  
+  » f2xm1
+  » fabs
+  » fchs
+  » fclex
+  » fcos
+  » fdecstp
+  » fincstp
+  » ffree st3
+  » finit
+  » fld dword ptr [rsi]
+  » fld qword ptr [rsi]
+  » fld tbyte ptr [rsi]
+  » fld st5
+  » fld1
+  » fldl2t
+  » fldl2e
+  » fldpi
+  » fldlg2
+  » fldln2
+  » fldz
+  » fnclex
+  » fninit
+  » fnstsw [rsi]
+  » fnstsw ax
+  » fnop
+  » fpatan
+  » fprem
+  » fprem1
+  » fptan
+  » frndint
+  » fscale
+  » fsin
+  » fsincos
+  » fsqrt
+  » fstsw [rsi]
+  » fstsw ax
+  » fst dword ptr [rsi]
+  » fst qword ptr [rsi]
+  » fst st5
+  » fstp dword ptr [rsi]
+  » fstp qword ptr [rsi]
+  » fstp st5
+  » ftst
+  » fwait
+  » fxam
+  » fxch
+  » fxch st5
+  » fxtract
+  » fyl2x
+  » fyl2xp1
+
+  » fadd dword ptr [rsi]
+  » fadd qword ptr [rsi]
+  » fadd st0, st5
+  » fadd st5, st0
+  » faddp
+  » faddp st5, st0
+  » fiadd dword ptr [rsi]
+  » fiadd word ptr [rsi]
+
+  » fdiv dword ptr [rsi]
+  » fdiv qword ptr [rsi]
+  » fdiv st0, st5
+  » fdiv st5, st0
+  » fdivp
+  » fdivp st5, st0
+  » fidiv dword ptr [rsi]
+  » fidiv word ptr [rsi]
+
+  » fdivr dword ptr [rsi]
+  » fdivr qword ptr [rsi]
+  » fdivr st0, st5
+  » fdivr st5, st0
+  » fdivrp
+  » fdivrp st5, st0
+  » fidivr dword ptr [rsi]
+  » fidivr word ptr [rsi]
+
+  » fmul dword ptr [rsi]
+  » fmul qword ptr [rsi]
+  » fmul st0, st5
+  » fmul st5, st0
+  » fmulp
+  » fmulp st5, st0
+  » fimul dword ptr [rsi]
+  » fimul word ptr [rsi]
+
+  » fsub dword ptr [rsi]
+  » fsub qword ptr [rsi]
+  » fsub st0, st5
+  » fsub st5, st0
+  » fsubp
+  » fsubp st5, st0
+  » fisub dword ptr [rsi]
+  » fisub word ptr [rsi]
+
+  » fsubr dword ptr [rsi]
+  » fsubr qword ptr [rsi]
+  » fsubr st0, st5
+  » fsubr st5, st0
+  » fsubrp
+  » fsubrp st5, st0
+  » fisubr dword ptr [rsi]
+  » fisubr word ptr [rsi]
+
+  for(int i = 0; i < 8; ++i) {
+    » fmul st{i}
+  }
+  
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateMMXTest())()
+{
+  Javelin::Assembler assembler;
+
+  » emms
+  » maskmovq mm3, mm7
+  » movd mm3, eax
+  » movd mm3, [rsi]
+  » movd [rsi], mm3
+
+  » movq mm3, rbx
+  » movq mm3, [rsi]
+  » movq [rsi], mm3
+  » movq mm3, mm1
+  
+  » movntq [rsi], mm3
+  
+  » packssdw mm2, [rsi]
+  » packsswb mm2, [rsi]
+  » packuswb mm2, [rsi]
+  » paddb mm2, mm1
+  » paddb mm2, [rsi]
+  » paddd mm2, [rsi]
+  » paddsb mm2, [rsi]
+  » paddsw mm2, [rsi]
+  » paddw mm2, [rsi]
+  » paddq mm2, [rsi]
+  » paddusb mm2, [rsi]
+  » paddusw mm2, [rsi]
+  » pand mm2, [rsi]
+  » pandn mm2, [rsi]
+  » pavgb mm2, [rsi]
+  » pavgw mm2, [rsi]
+  » pcmpeqb mm2, [rsi]
+  » pcmpeqd mm2, [rsi]
+  » pcmpeqw mm2, [rsi]
+  » pcmpgtb mm2, [rsi]
+  » pcmpgtd mm2, [rsi]
+  » pcmpgtw mm2, [rsi]
+  » pmaddwd mm2, [rsi]
+  » pmaxsw mm2, [rsi]
+  » pmaxub mm2, [rsi]
+  » pminsw mm2, [rsi]
+  » pminub mm2, [rsi]
+  » pmulhw mm2, [rsi]
+  » pmulhuw mm2, [rsi]
+  » pmullw mm2, [rsi]
+  » pmuludq mm2, [rsi]
+  » por mm2, [rsi]
+  » psadbw mm2, [rsi]
+  » pshufw mm2, mm7, 0x11
+  » pslld mm2, [rsi]
+  » pslld mm2, 3
+  » psllq mm2, [rsi]
+  » psllq mm2, 3
+  » psllw mm2, [rsi]
+  » psllw mm2, 3
+  » psrad mm2, [rsi]
+  » psrad mm2, 3
+  » psraw mm2, [rsi]
+  » psraw mm2, 3
+  » psrld mm2, [rsi]
+  » psrld mm2, 3
+  » psrlq mm2, [rsi]
+  » psrlq mm2, 3
+  » psrlw mm2, [rsi]
+  » psrlw mm2, 3
+  » psubb mm2, mm1
+  » psubb mm2, [rsi]
+  » psubw mm2, [rsi]
+  » psubd mm2, [rsi]
+  » psubq mm2, [rsi]
+  » psubsb mm2, [rsi]
+  » psubsw mm2, [rsi]
+  » psubusb mm2, [rsi]
+  » psubusw mm2, [rsi]
+  » punpckhbw mm2, [rsi]
+  » punpckhwd mm2, [rsi]
+  » punpckhdq mm2, [rsi]
+  » punpcklbw mm2, [rsi]
+  » punpcklwd mm2, [rsi]
+  » punpckldq mm2, [rsi]
+  » pxor mm2, [rsi]
+
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateSSETest())()
+{
+  Javelin::Assembler assembler;
+
+  » movd eax, xmm11
+  » movd xmm11, eax
+  » movd xmm0, [rsi]
+  » movd [rsi], xmm0
+  » movq rax, xmm11
+  » movq xmm11, rax
+  » movq xmm0, xmm11
+  » movq xmm0, xmm10
+  » movq xmm0, [rsi]
+  » movq [rsi], xmm0
+  » movdq2q mm5, xmm6
+  » movdq2q mm5, xmm11
+  » movq2dq xmm6, mm5
+  » movq2dq xmm11, mm5
+
+  » addps xmm4, xmm11
+  » addss xmm4, xmm11
+  » andnps xmm4, xmm11
+  » andps xmm4, xmm11
+  » cmpps xmm4, xmm11, 0
+  » cmpss xmm4, xmm11, 0
+  » cmpps xmm4, xmm11, 7
+  » cmpss xmm4, xmm11, 7
+  » cmpeqps xmm4, xmm11
+  » cmpeqss xmm4, xmm11
+  » cmpleps xmm4, xmm11
+  » cmpless xmm4, xmm11
+  » cmpltps xmm4, xmm11
+  » cmpltss xmm4, xmm11
+  » cmpneqps xmm4, xmm11
+  » cmpneqss xmm4, xmm11
+  » cmpnleps xmm4, xmm11
+  » cmpnless xmm4, xmm11
+  » cmpnltps xmm4, xmm11
+  » cmpnltss xmm4, xmm11
+  » cmpordps xmm4, xmm11
+  » cmpordss xmm4, xmm11
+  » cmpunordps xmm4, xmm11
+  » cmpunordss xmm4, xmm11
+  » comiss xmm4, xmm11
+  » cvtpi2pd xmm4, mm3
+  » cvtpi2ps xmm4, mm3
+  » cvtps2pi mm4, xmm11
+  » cvtsi2ss xmm11, ebx
+  » cvtsi2ss xmm11, rbx
+  » cvtss2si ebx, xmm11
+  » cvtss2si rbx, xmm11
+  » divps xmm4, xmm11
+  » divss xmm4, xmm11
+  » maxps xmm4, xmm11
+  » maxss xmm4, xmm11
+  » minps xmm4, xmm11
+  » minss xmm4, xmm11
+  » movaps xmm4, [r10]
+  » movaps [r10], xmm4
+  » movhlps xmm4, xmm11
+  » movhps xmm4, [r10]
+  » movhps [r10], xmm4
+  » movlhps xmm4, xmm11
+  » movlps xmm4, [r10]
+  » movlps [r10], xmm4
+  » movmskps eax, xmm4
+  » movmskps r8d, xmm4
+  » movmskps eax, xmm11
+  » movmskps r8d, xmm11
+  » movntps [rsi], xmm11
+  » movss xmm4, [r10]
+  » movss [r10], xmm4
+  » movups xmm4, [r10]
+  » mulps xmm4, xmm11
+  » mulss xmm4, xmm11
+  » orps xmm4, xmm11
+  » packssdw xmm2, [rsi]
+  » packsswb xmm2, [rsi]
+  » packuswb xmm2, [rsi]
+  » paddb xmm2, xmm1
+  » paddb xmm2, [rsi]
+  » paddd xmm2, [rsi]
+  » paddsb xmm2, [rsi]
+  » paddsw xmm2, [rsi]
+  » paddw xmm2, [rsi]
+  » paddq xmm2, [rsi]
+  » paddusb xmm2, [rsi]
+  » paddusw xmm2, [rsi]
+  » pand xmm2, [rsi]
+  » pandn xmm2, [rsi]
+  » pavgb xmm2, [rsi]
+  » pavgw xmm2, [rsi]
+  » pcmpeqb xmm2, [rsi]
+  » pcmpeqd xmm2, [rsi]
+  » pcmpeqw xmm2, [rsi]
+  » pcmpgtb xmm2, [rsi]
+  » pcmpgtd xmm2, [rsi]
+  » pcmpgtw xmm2, [rsi]
+  » pmaddwd xmm2, [rsi]
+  » pmaxsb xmm2, [rsi]
+  » pmaxsd xmm2, [rsi]
+  » pmaxsw xmm2, [rsi]
+  » pmaxub xmm2, [rsi]
+  » pmaxud xmm2, [rsi]
+  » pmaxuw xmm2, [rsi]
+  » pminsb xmm2, [rsi]
+  » pminsd xmm2, [rsi]
+  » pminsw xmm2, [rsi]
+  » pminub xmm2, [rsi]
+  » pminud xmm2, [rsi]
+  » pminuw xmm2, [rsi]
+  » pmulhw xmm2, [rsi]
+  » pmulhuw xmm2, [rsi]
+  » pmullw xmm2, [rsi]
+  » pmuludq xmm2, [rsi]
+  » por xmm2, [rsi]
+  » prefetcht0 [rsi]
+  » prefetcht1 [rsi]
+  » prefetcht2 [rsi]
+  » prefetchtnta [rsi]
+  » psadbw xmm2, [rsi]
+  » pshufd xmm2, xmm7, 0x11
+  » pshufhw xmm2, xmm7, 0x11
+  » pshuflw xmm2, xmm7, 0x11
+  » pslld xmm2, [rsi]
+  » pslld xmm2, 3
+  » pslldq xmm2, 3
+  » psllq xmm2, [rsi]
+  » psllq xmm2, 3
+  » psllw xmm2, [rsi]
+  » psllw xmm2, 3
+  » psrad xmm2, [rsi]
+  » psrad xmm2, 3
+  » psraw xmm2, [rsi]
+  » psraw xmm2, 3
+  » psrld xmm2, [rsi]
+  » psrld xmm2, 3
+  » psrldq xmm2, 3
+  » psrlq xmm2, [rsi]
+  » psrlq xmm2, 3
+  » psrlw xmm2, [rsi]
+  » psrlw xmm2, 3
+  » psubb xmm2, xmm1
+  » psubb xmm2, [rsi]
+  » psubw xmm2, [rsi]
+  » psubd xmm2, [rsi]
+  » psubq xmm2, [rsi]
+  » psubsb xmm2, [rsi]
+  » psubsw xmm2, [rsi]
+  » psubusb xmm2, [rsi]
+  » psubusw xmm2, [rsi]
+  » pxor xmm2, [rsi]
+  » rcpps xmm4, [rsi]
+  » rcpss xmm4, [rsi]
+  » rsqrtps xmm4, [rsi]
+  » rsqrtss xmm4, [rsi]
+  » shufps xmm4, xmm11, 0x11
+  » sqrtps xmm4, xmm11
+  » sqrtss xmm4, xmm11
+  » subps xmm4, xmm11
+  » subss xmm4, xmm11
+  » ucomiss xmm4, xmm11
+  » unpckhps xmm4, xmm11
+  » unpcklps xmm4, xmm11
+  » xorps xmm4, xmm11
+
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateSSE2Test())()
+{
+  Javelin::Assembler assembler;
+
+  » addpd xmm4, xmm11
+  » addsd xmm4, xmm11
+  » cmppd xmm4, xmm11, 0
+  » cmpsd xmm4, xmm11, 0
+  » cmppd xmm4, xmm11, 7
+  » cmpsd xmm4, xmm11, 7
+  » cmpeqpd xmm4, xmm11
+  » cmpeqsd xmm4, xmm11
+  » cmplepd xmm4, xmm11
+  » cmplesd xmm4, xmm11
+  » cmpltpd xmm4, xmm11
+  » cmpltsd xmm4, xmm11
+  » cmpneqpd xmm4, xmm11
+  » cmpneqsd xmm4, xmm11
+  » cmpnlepd xmm4, xmm11
+  » cmpnlesd xmm4, xmm11
+  » cmpnltpd xmm4, xmm11
+  » cmpnltsd xmm4, xmm11
+  » cmpordpd xmm4, xmm11
+  » cmpordsd xmm4, xmm11
+  » cmpunordpd xmm4, xmm11
+  » cmpunordsd xmm4, xmm11
+  » comisd xmm4, xmm11
+  » cvtdq2pd xmm4, xmm11
+  » cvtdq2ps xmm4, xmm11
+  » cvtpd2dq xmm4, xmm11
+  » cvtpd2ps xmm4, xmm11
+  » cvtps2dq xmm4, xmm11
+  » cvtps2pd xmm4, xmm11
+  » cvtsd2si eax, xmm11
+  » cvtsd2si rax, xmm11
+  » cvtsd2ss xmm4, xmm11
+  » cvtsi2sd xmm11, ebx
+  » cvtsi2sd xmm11, rbx
+  » cvtss2sd xmm4, xmm11
+  » divpd xmm4, xmm11
+  » divsd xmm4, xmm11
+  » maskmovdqu xmm4, xmm11
+  » maxpd xmm4, xmm11
+  » maxsd xmm4, xmm11
+  » minpd xmm4, xmm11
+  » minsd xmm4, xmm11
+  » movdqa xmm4, xmm11
+  » movapd [r10], xmm0
+  » movapd xmm0, [r10]
+  » movmskpd eax, xmm4
+  » movmskpd r8d, xmm4
+  » movmskpd eax, xmm11
+  » movmskpd r8d, xmm11
+  » movntdq [rbx], xmm11
+  » movntpd [rbx], xmm11
+  » mulpd xmm4, xmm11
+  » mulsd xmm4, xmm11
+  » pextrw eax, xmm4, 2
+  » punpckhbw xmm2, [rsi]
+  » punpckhwd xmm2, [rsi]
+  » punpckhdq xmm2, [rsi]
+  » punpckhqdq xmm2, [rsi]
+  » punpcklbw xmm2, [rsi]
+  » punpcklwd xmm2, [rsi]
+  » punpckldq xmm2, [rsi]
+  » punpcklqdq xmm2, [rsi]
+  » shufpd xmm4, xmm11, 0x11
+  » sqrtpd xmm4, xmm11
+  » sqrtsd xmm4, xmm11
+  » subpd xmm4, xmm11
+  » subsd xmm4, xmm11
+  » ucomisd xmm4, xmm11
+
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateSSSE3Test())()
+{
+  Javelin::Assembler assembler;
+
+  » pabsb mm4, mm7
+  » pabsb xmm4, xmm11
+  » vpabsb xmm4, xmm11
+  » vpabsb ymm4, ymm11
+  
+  » pabsd mm4, mm7
+  » pabsd xmm4, xmm11
+  » vpabsd xmm4, xmm11
+  » vpabsd ymm4, ymm11
+  
+  » pabsw mm4, mm7
+  » pabsw xmm4, xmm11
+  » vpabsw xmm4, xmm11
+  » vpabsw ymm4, ymm11
+
+  » palignr mm4, mm7, 3
+  » palignr xmm4, xmm13, 3
+  » vpalignr xmm4, xmm7, xmm13, 3
+  » vpalignr ymm4, ymm7, ymm13, 3
+
+  » phaddw mm4, mm7
+  » phaddw xmm4, xmm11
+  » vphaddw xmm4, xmm5, xmm11
+  » vphaddw ymm4, ymm5, ymm11
+  
+  » phaddsw mm4, mm7
+  » phaddsw xmm4, xmm11
+  » vphaddsw xmm4, xmm5, xmm11
+  » vphaddsw ymm4, ymm5, ymm11
+  
+  » phaddd mm4, mm7
+  » phaddd xmm4, xmm11
+  » vphaddd xmm4, xmm5, xmm11
+  » vphaddd ymm4, ymm5, ymm11
+  
+  » phsubw mm4, mm7
+  » phsubw xmm4, xmm11
+  » vphsubw xmm4, xmm5, xmm11
+  » vphsubw ymm4, ymm5, ymm11
+  
+  » phsubsw mm4, mm7
+  » phsubsw xmm4, xmm11
+  » vphsubsw xmm4, xmm5, xmm11
+  » vphsubsw ymm4, ymm5, ymm11
+  
+  » phsubd mm4, mm7
+  » phsubd xmm4, xmm11
+  » vphsubd xmm4, xmm5, xmm11
+  » vphsubd ymm4, ymm5, ymm11
+  
+  » pmaddubsw mm4, mm7
+  » pmaddubsw xmm4, xmm11
+  » vpmaddubsw xmm4, xmm5, xmm11
+  » vpmaddubsw ymm4, ymm5, ymm11
+
+  » pmulhrsw mm4, mm7
+  » pmulhrsw xmm4, xmm11
+  » vpmulhrsw xmm4, xmm5, xmm11
+  » vpmulhrsw ymm4, ymm5, ymm11
+  
+  » pshufb mm4, mm7
+  » pshufb xmm4, xmm11
+  » vpshufb xmm4, xmm5, xmm11
+  » vpshufb ymm4, ymm5, ymm11
+  
+  » psignb mm4, mm7
+  » psignb xmm4, xmm11
+  » vpsignb xmm4, xmm5, xmm11
+  » vpsignb ymm4, ymm5, ymm11
+
+  » psignd mm4, mm7
+  » psignd xmm4, xmm11
+  » vpsignd xmm4, xmm5, xmm11
+  » vpsignd ymm4, ymm5, ymm11
+
+  » psignw mm4, mm7
+  » psignw xmm4, xmm11
+  » vpsignw xmm4, xmm5, xmm11
+  » vpsignw ymm4, ymm5, ymm11
+
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateSSE3Test())()
+{
+  Javelin::Assembler assembler;
+
+  » addsubpd xmm4, xmm11
+  » addsubps xmm4, xmm11
+  » haddpd xmm9, [r10]
+  » haddps xmm9, [r10]
+  » hsubpd xmm9, [r10]
+  » hsubps xmm9, [r10]
+  » lddqu xmm9, [r10]
+  » movddup xmm9, [r10]
+  » movshdup xmm9, [r10]
+  » movsldup xmm9, [r10]
+
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateSSE41Test())()
+{
+  Javelin::Assembler assembler;
+  
+  » packusdw xmm2, [rsi]
+  » vpackusdw xmm2, xmm3, [rsi]
+  » vpackusdw ymm2, ymm3, [rsi]
+  » pcmpeqq xmm2, [rsi]
+  » vpcmpeqq xmm2, xmm3, [rsi]
+  » vpcmpeqq ymm2, ymm3, [rsi]
+  » pextrb [rsi], xmm4, 3
+  » pextrb esi, xmm4, 3
+  » pextrb rsi, xmm4, 3
+  » pextrw [rsi], xmm4, 3
+  » pextrw esi, xmm4, 3
+  » pextrw rsi, xmm4, 3
+  » pextrd [rsi], xmm4, 3
+  » pextrd esi, xmm4, 3
+  » pextrq [rsi], xmm4, 1
+  » pextrq rsi, xmm4, 1
+  » pinsrb xmm4, [rsi], 3
+  » pinsrb xmm4, esi, 3
+  » pinsrb xmm4, rsi, 3
+  » pinsrw xmm4, [rsi], 3
+  » pinsrw xmm4, esi, 3
+  » pinsrd xmm4, [rsi], 3
+  » pinsrd xmm4, esi, 3
+  » pinsrq xmm4, [rsi], 1
+  » pinsrq xmm4, rsi, 1
+  » pmaxsd xmm2, [rsi]
+  » vpmaxsd xmm2, xmm3, [rsi]
+  » vpmaxsd ymm2, ymm3, [rsi]
+  » vpminsd xmm2, xmm3, [rsi]
+  » vpminsd ymm2, ymm3, [rsi]
+
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateSSE42Test())()
+{
+  Javelin::Assembler assembler;
+
+  » pcmpestri xmm4, [rsi], 1
+  » pcmpestrm xmm4, [rsi], 1
+  » pcmpgtq xmm4, [rsi]
+  » pcmpistri xmm4, [rsi], 1
+  » pcmpistrm xmm4, [rsi], 1
+
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateAVXTest())()
+{
+  Javelin::Assembler assembler;
+  
+  » vzeroall
+  » vzeroupper
+
+  » vmovdqa xmm9, [rsi]
+  » vmovdqa ymm9, [rsi]
+  » vmovdqa [rsi], xmm9
+  » vmovdqa [rsi], ymm9
+
+  » vaddps xmm4, xmm3, xmm11
+  » vaddss xmm4, xmm3, xmm11
+  » vandnps xmm4, xmm3, xmm11
+  » vandps xmm4, xmm3, xmm11
+  » vdivps xmm4, xmm3, xmm11
+  » vdivss xmm4, xmm3, xmm11
+  » vmaxps xmm4, xmm3, xmm11
+  » vmaxss xmm4, xmm3, xmm11
+  » vminps xmm4, xmm3, xmm11
+  » vminss xmm4, xmm3, xmm11
+  » vmulps xmm4, xmm3, xmm11
+  » vmulss xmm4, xmm3, xmm11
+  » vorps xmm4, xmm3, xmm11
+  » vpackssdw xmm2, xmm3, [rsi]
+  » vpacksswb xmm2, xmm3, [rsi]
+  » vpackuswb xmm2, xmm3, [rsi]
+  » vpaddb xmm2, xmm3, xmm1
+  » vpaddb xmm2, xmm3, [rsi]
+  » vpaddd xmm2, xmm3, [rsi]
+  » vpaddsb xmm2, xmm3, [rsi]
+  » vpaddsw xmm2, xmm3, [rsi]
+  » vpaddw xmm2, xmm3, [rsi]
+  » vpaddq xmm2, xmm3, [rsi]
+  » vpaddusb xmm2, xmm3, [rsi]
+  » vpaddusw xmm2, xmm3, [rsi]
+  » vpand xmm2, xmm3, [rsi]
+  » vpandn xmm2, xmm3, [rsi]
+  » vpavgb xmm2, xmm3, [rsi]
+  » vpavgw xmm2, xmm3, [rsi]
+  » vpcmpeqb xmm2, xmm3, [rsi]
+  » vpcmpeqd xmm2, xmm3, [rsi]
+  » vpcmpeqw xmm2, xmm3, [rsi]
+  » vpcmpgtb xmm2, xmm3, [rsi]
+  » vpcmpgtd xmm2, xmm3, [rsi]
+  » vpcmpgtw xmm2, xmm3, [rsi]
+  » vpmaddwd xmm2, xmm3, [rsi]
+  » vpmovmskb ebx, xmm3
+  » vpmulhw xmm2, xmm3, [rsi]
+  » vpmulhuw xmm2, xmm3, [rsi]
+  » vpmullw xmm2, xmm3, [rsi]
+  » vpmuludq xmm2, xmm3, [rsi]
+  » vpor xmm2, xmm3, [rsi]
+  » vpsadbw xmm2, xmm3, [rsi]
+  » vpshufd xmm2, xmm7, 0x11
+  » vpshufhw xmm2, xmm7, 0x11
+  » vpshuflw xmm2, xmm7, 0x11
+  » vpslld xmm2, xmm3, [rsi]
+  » vpslld xmm2, xmm3, 3
+  » vpslldq xmm2, xmm3, 3
+  » vpsllq xmm2, xmm3, [rsi]
+  » vpsllq xmm2, xmm3, 3
+  » vpsllw xmm2, xmm3, [rsi]
+  » vpsllw xmm2, xmm3, 3
+  » vpsrad xmm2, xmm3, [rsi]
+  » vpsrad xmm2, xmm3, 3
+  » vpsraw xmm2, xmm3, [rsi]
+  » vpsraw xmm2, xmm3, 3
+  » vpsrld xmm2, xmm3, [rsi]
+  » vpsrld xmm2, xmm3, 3
+  » vpsrldq xmm2, xmm3, 3
+  » vpsrlq xmm2, xmm3, [rsi]
+  » vpsrlq xmm2, xmm3, 3
+  » vpsrlw xmm2, xmm3, [rsi]
+  » vpsrlw xmm2, xmm3, 3
+  » vpsubb xmm2, xmm3, xmm1
+  » vpsubb xmm2, xmm3, [rsi]
+  » vpsubw xmm2, xmm3, [rsi]
+  » vpsubd xmm2, xmm3, [rsi]
+  » vpsubq xmm2, xmm3, [rsi]
+  » vpsubsb xmm2, xmm3, [rsi]
+  » vpsubsw xmm2, xmm3, [rsi]
+  » vpsubusb xmm2, xmm3, [rsi]
+  » vpsubusw xmm2, xmm3, [rsi]
+  » vpunpckhbw xmm2, xmm3, [rsi]
+  » vpunpckhwd xmm2, xmm3, [rsi]
+  » vpunpckhdq xmm2, xmm3, [rsi]
+  » vpunpckhqdq xmm2, xmm3, [rsi]
+  » vpunpcklbw xmm2, xmm3, [rsi]
+  » vpunpcklwd xmm2, xmm3, [rsi]
+  » vpunpckldq xmm2, xmm3, [rsi]
+  » vpunpcklqdq xmm2, xmm3, [rsi]
+  » vpxor xmm2, xmm3, [rsi]
+  » vshufpd xmm4, xmm3, xmm11, 0x11
+  » vshufps xmm4, xmm3, xmm11, 0x11
+  » vsqrtps xmm4, xmm11
+  » vsqrtss xmm4, xmm11
+  » vsubps xmm4, xmm3, xmm11
+  » vsubss xmm4, xmm3, xmm11
+  » vxorps xmm4, xmm3, xmm11
+  » vaddpd xmm4, xmm3, xmm11
+  » vaddsd xmm4, xmm3, xmm11
+  » vdivpd xmm4, xmm3, xmm11
+  » vdivsd xmm4, xmm3, xmm11
+  » vmaxpd xmm4, xmm3, xmm11
+  » vmaxsd xmm4, xmm3, xmm11
+  » vminpd xmm4, xmm3, xmm11
+  » vminsd xmm4, xmm3, xmm11
+  » vmulpd xmm4, xmm3, xmm11
+  » vmulsd xmm4, xmm3, xmm11
+  » vsqrtpd xmm4, xmm11
+  » vsqrtsd xmm4, xmm11
+  » vsubpd xmm4, xmm3, xmm11
+  » vsubsd xmm4, xmm3, xmm11
+  » vunpckhps xmm4, xmm3, xmm11
+  » vunpcklps xmm4, xmm3, xmm11
+
+  » vaddps ymm4, ymm3, ymm11
+  » vaddss ymm4, ymm3, ymm11
+  » vandnps ymm4, ymm3, ymm11
+  » vandps ymm4, ymm3, ymm11
+  » vdivps ymm4, ymm3, ymm11
+  » vdivss ymm4, ymm3, ymm11
+  » vmaxps ymm4, ymm3, ymm11
+  » vmaxss ymm4, ymm3, ymm11
+  » vminps ymm4, ymm3, ymm11
+  » vminss ymm4, ymm3, ymm11
+  » vmulps ymm4, ymm3, ymm11
+  » vmulss ymm4, ymm3, ymm11
+  » vorps ymm4, ymm3, ymm11
+  » vpackssdw ymm2, ymm3, [rsi]
+  » vpacksswb ymm2, ymm3, [rsi]
+  » vpackuswb ymm2, ymm3, [rsi]
+  » vpaddb ymm2, ymm3, ymm1
+  » vpaddb ymm2, ymm3, [rsi]
+  » vpaddd ymm2, ymm3, [rsi]
+  » vpaddsb ymm2, ymm3, [rsi]
+  » vpaddsw ymm2, ymm3, [rsi]
+  » vpaddw ymm2, ymm3, [rsi]
+  » vpaddq ymm2, ymm3, [rsi]
+  » vpaddusb ymm2, ymm3, [rsi]
+  » vpaddusw ymm2, ymm3, [rsi]
+  » vpand ymm2, ymm3, [rsi]
+  » vpandn ymm2, ymm3, [rsi]
+  » vpavgb ymm2, ymm3, [rsi]
+  » vpavgw ymm2, ymm3, [rsi]
+  » vpcmpeqb ymm2, ymm3, [rsi]
+  » vpcmpeqd ymm2, ymm3, [rsi]
+  » vpcmpeqw ymm2, ymm3, [rsi]
+  » vpcmpgtb ymm2, ymm3, [rsi]
+  » vpcmpgtd ymm2, ymm3, [rsi]
+  » vpcmpgtw ymm2, ymm3, [rsi]
+  » vpmaddwd ymm2, ymm3, [rsi]
+  » vpmovmskb rbx, ymm3
+  » vpmulhw ymm2, ymm3, [rsi]
+  » vpmulhuw ymm2, ymm3, [rsi]
+  » vpmullw ymm2, ymm3, [rsi]
+  » vpmuludq ymm2, ymm3, [rsi]
+  » vpor ymm2, ymm3, [rsi]
+  » vpsadbw ymm2, ymm3, [rsi]
+  » vpshufd ymm2, ymm7, 0x11
+  » vpshufhw ymm2, ymm7, 0x11
+  » vpshuflw ymm2, ymm7, 0x11
+  » vpslld ymm2, ymm3, [rsi]
+  » vpslld ymm2, ymm3, 3
+  » vpslldq ymm2, ymm3, 3
+  » vpsllq ymm2, ymm3, [rsi]
+  » vpsllq ymm2, ymm3, 3
+  » vpsllw ymm2, ymm3, [rsi]
+  » vpsllw ymm2, ymm3, 3
+  » vpsrad ymm2, ymm3, [rsi]
+  » vpsrad ymm2, ymm3, 3
+  » vpsraw ymm2, ymm3, [rsi]
+  » vpsraw ymm2, ymm3, 3
+  » vpsrld ymm2, ymm3, [rsi]
+  » vpsrld ymm2, ymm3, 3
+  » vpsrldq ymm2, ymm3, 3
+  » vpsrlq ymm2, ymm3, [rsi]
+  » vpsrlq ymm2, ymm3, 3
+  » vpsrlw ymm2, ymm3, [rsi]
+  » vpsrlw ymm2, ymm3, 3
+  » vpsubb ymm2, ymm3, ymm1
+  » vpsubb ymm2, ymm3, [rsi]
+  » vpsubw ymm2, ymm3, [rsi]
+  » vpsubd ymm2, ymm3, [rsi]
+  » vpsubq ymm2, ymm3, [rsi]
+  » vpsubsb ymm2, ymm3, [rsi]
+  » vpsubsw ymm2, ymm3, [rsi]
+  » vpsubusb ymm2, ymm3, [rsi]
+  » vpsubusw ymm2, ymm3, [rsi]
+  » vpxor ymm2, ymm3, [rsi]
+  » vshufpd ymm4, ymm3, ymm11, 0x11
+  » vshufps ymm4, ymm3, ymm11, 0x11
+  » vsqrtps ymm4, ymm11
+  » vsqrtss ymm4, ymm11
+  » vsubps ymm4, ymm3, ymm11
+  » vsubss ymm4, ymm3, ymm11
+  » vxorps ymm4, ymm3, ymm11
+  » vaddpd ymm4, ymm3, ymm11
+  » vaddsd ymm4, ymm3, ymm11
+  » vdivpd ymm4, ymm3, ymm11
+  » vdivsd ymm4, ymm3, ymm11
+  » vmaxpd ymm4, ymm3, ymm11
+  » vmaxsd ymm4, ymm3, ymm11
+  » vminpd ymm4, ymm3, ymm11
+  » vminsd ymm4, ymm3, ymm11
+  » vmulpd ymm4, ymm3, ymm11
+  » vmulsd ymm4, ymm3, ymm11
+  » vpunpckhbw ymm2, ymm3, [rsi]
+  » vpunpckhwd ymm2, ymm3, [rsi]
+  » vpunpckhdq ymm2, ymm3, [rsi]
+  » vpunpckhqdq ymm2, ymm3, [rsi]
+  » vpunpcklbw ymm2, ymm3, [rsi]
+  » vpunpcklwd ymm2, ymm3, [rsi]
+  » vpunpckldq ymm2, ymm3, [rsi]
+  » vpunpcklqdq ymm2, ymm3, [rsi]
+  » vsqrtpd ymm4, ymm11
+  » vsqrtsd ymm4, ymm11
+  » vsubpd ymm4, ymm3, ymm11
+  » vsubsd ymm4, ymm3, ymm11
+  » vunpckhps ymm4, ymm3, ymm11
+  » vunpcklps ymm4, ymm3, ymm11
+
+  // AVX methods first defined in SSE3
+  » vaddsubpd xmm4, xmm7, xmm11
+  » vaddsubps xmm4, xmm7, xmm11
+  » vhaddpd xmm9, xmm7, [r10]
+  » vhaddps xmm9, xmm7, [r10]
+  » vhsubpd xmm9, xmm7, [r10]
+  » vhsubps xmm9, xmm7, [r10]
+  » vlddqu xmm9, [r10]
+  » vmovddup xmm9, [r10]
+  » vmovshdup xmm9, [r10]
+  » vmovsldup xmm9, [r10]
+  » vaddsubpd ymm4, ymm7, ymm11
+  » vaddsubps ymm4, ymm7, ymm11
+  » vhaddpd ymm9, ymm7, [r10]
+  » vhaddps ymm9, ymm7, [r10]
+  » vhsubpd ymm9, ymm7, [r10]
+  » vhsubps ymm9, ymm7, [r10]
+  » vlddqu ymm9, [r10]
+  » vmovddup ymm9, [r10]
+  » vmovshdup ymm9, [r10]
+  » vmovsldup ymm9, [r10]
+
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateAESTest())()
+{
+  Javelin::Assembler assembler;
+  
+  » aesdec xmm4, xmm11
+  » aesdeclast xmm4, xmm11
+  » aesenc xmm4, xmm11
+  » aesenclast xmm4, xmm11
+  » aesimc xmm4, xmm11
+  » aeskeygenassist xmm4, xmm11, 0x20
+  
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateABMTest())()
+{
+  Javelin::Assembler assembler;
+  
+  » lzcnt si, di
+  » lzcnt esi, edi
+  » lzcnt rsi, rdi
+  » popcnt si, di
+  » popcnt esi, edi
+  » popcnt rsi, rdi
+
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateBMI1Test())()
+{
+  Javelin::Assembler assembler;
+  
+  » andn eax, edi, [rsi]
+  » andn rax, rdi, [rsi]
+  » bextr eax, [rsi], edi
+  » bextr rax, [rsi], rdi
+  » blsi eax, [rsi]
+  » blsi rax, [rsi]
+  » blsmsk eax, [rsi]
+  » blsmsk rax, [rsi]
+  » blsr eax, [rsi]
+  » blsr rax, [rsi]
+  » tzcnt eax, [rsi]
+  » tzcnt rax, [rsi]
+
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateBMI2Test())()
+{
+  Javelin::Assembler assembler;
+
+  » bzhi eax, [rsi], edi
+  » bzhi rax, [rsi], rdi
+
+  » mulx eax, edi, [rsi]
+  » mulx rax, rdi, [rsi]
+
+  » pdep eax, edi, esi
+  » pdep r8d, edi, esi
+  » pdep eax, r9d, esi
+  » pdep eax, edi, r10d
+
+  » pdep rax, rdi, rsi
+  » pdep r8, rdi, rsi
+  » pdep rax, r9, rsi
+  » pdep rax, rdi, r10
+
+  » pdep eax, edi, [rsi]
+  » pdep rax, rdi, [rsi]
+
+  » pext eax, edi, esi
+  
+  » rorx eax, [rsi], 3
+  » rorx rax, [rsi], 3
+  
+  » sarx eax, [rsi], edi
+  » sarx rax, [rsi], rdi
+  » shlx eax, [rsi], edi
+  » shlx rax, [rsi], rdi
+  » shrx eax, [rsi], edi
+  » shrx rax, [rsi], rdi
+
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateAddressingModeTest())()
+{
+  Javelin::Assembler assembler;
+
+  // Test static RM encoding
+  » mov al, [rsi]
+  » mov ax, [rsi]
+  » mov eax, [rsi]
+  » mov rax, [rsi]
+  » mov eax, [rax]
+  » mov eax, [rcx]
+  » mov eax, [rdx]
+  » mov eax, [rbx]
+  » mov eax, [rsp]
+  » mov eax, [rbp]
+  » mov eax, [rsi]
+  » mov eax, [rdi]
+  » mov eax, [r8]
+  » mov eax, [r9]
+  » mov eax, [r10]
+  » mov eax, [r11]
+  » mov eax, [r12]
+  » mov eax, [r13]
+  » mov eax, [r14]
+  » mov eax, [r15]
+  » mov eax, [rip + 10]
+  » mov eax, [rbx+rsi]
+  » mov eax, [rbx+2*rsi]
+  » mov eax, [rbx+rsi*2]
+  » mov eax, [rsi*2]
+  » mov eax, [rbx+rsi + 0x1234]
+  » mov eax, [rbx+2*rsi + 0x1234]
+  » mov eax, [rbx+rsi*2 + 0x1234]
+  » mov eax, [rsi*2 + 0x1234]
+  » mov eax, [rbp + 0x12]
+  » mov eax, [rsp + 0x12]
+  » mov eax, [rsi*2 + 0x1234]
+
+  // Test dynamic RM encoding.
+  static const int disp[] = { 0, 10, -10, 10000, -10000 };
+  for(int d : disp)
+  {
+    » mov eax, [rip+{d}]
+  }
+  for(int d : disp)
+  {
+    » mov eax, [rsi+{d}]
+  }
+  for(int d : disp)
+  {
+    » mov eax, [r12+{d}]
+  }
+  for(int d : disp)
+  {
+    » mov eax, [r13+{d}]
+  }
+  for(int d : disp)
+  {
+    » mov eax, [rbp+{d}]
+  }
+  for(int d : disp)
+  {
+    » mov eax, [rsp+{d}]
+  }
+
+  for(int i = 0; i < 16; ++i)
+  {
+    » mov reg32{i}, [rsi]
+  }
+  for(int b = 0; b < 16; ++b)
+  {
+    » mov al, [reg64{b}]
+    » mov al, [reg64{b} + rsi]
+  }
+  for(int b = 0; b < 16; ++b)
+  {
+    » mov al, [reg64{b} + rsi + 0x12]
+  }
+  for(int b = 0; b < 16; ++b)
+  {
+    » mov al, [reg64{b} + rsi - 0x12]
+  }
+  for(int b = 0; b < 16; ++b)
+  {
+    » mov al, [reg64{b} + rsi + 0x1234]
+  }
+  for(int b = 0; b < 16; ++b)
+  {
+    » mov al, [reg64{b} + rsi - 0x1234]
+  }
+  for(int b = 0; b < 16; ++b)
+  {
+    for(int i = 0; i < 16; ++i)
+    {
+      if(i == 4) continue;      
+      static const int scales[] = {1,2,4,8};
+      for(int s : scales)
+      {
+        for(int d : disp)
+        {
+          » mov eax, [reg64{b} + {s}*reg64{i} + {d}]
+        }
+      }
+    }
+  }
+
+  return (void(*)()) assembler.Build();
+}
+
+static int64_t (*CreateMovRAXFunction())()
+{
+  Javelin::Assembler assembler;
+  » mov rax, {0}
+  » mov rax, {10}
+  » mov rax, {-10}
+  » mov rax, {1000}
+  » mov rax, {-1000}
+  » mov rax, {0x87654321}
+  » mov rax, {0xfedcba9876543210}
+  » ret
+  return (int64_t(*)()) assembler.Build();
+}
+
+typedef int (*DynamicFunction)(int);
+static DynamicFunction CreateFunction(int c)
+{
+  Javelin::Assembler assembler;
+  
+  // This implements f(x) = 2*x + c,
+  // where c is a constant at assembly time.
+  » lea eax, [rdi+rdi+{c}]
+  » ret
+  
+  return (DynamicFunction) assembler.Build();
+}
+
+static void (*CreatePushPopTest())()
+{
+  Javelin::Assembler assembler;
+  for(int i = 0; i < 16; ++i)
+  {
+    » push reg64{i}
+  }
+  for(int i = 15; i >= 0; --i)
+  {
+    » pop reg64{i}
+  }
+  » ret
+  return (void (*)()) assembler.Build();
+}
+
+static void (*CreateMovTest())()
+{
+  Javelin::Assembler assembler;
+
+  »  mov rax, [0x123456789abcdef0]
+  »  mov eax, [0x123456789abcdef0]
+  »  mov ax, [0x123456789abcdef0]
+  »  mov al, [0x123456789abcdef0]
+
+  »  mov [0x123456789abcdef0], rax
+  »  mov [0x123456789abcdef0], eax
+  »  mov [0x123456789abcdef0], ax
+  »  mov [0x123456789abcdef0], al
+
+  for(int i = 0; i < 15; ++i)
+  {
+    » mov reg64{i}, reg64{i+1}
+  }
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateOpcodeTest())()
+{
+  Javelin::Assembler assembler;
+  
+  » 1:
+  » adc esi, edi
+  » adcx esi, edi
+  » add esi, edi
+  » adox esi, edi
+  » and esi, edi
+  » bsf esi, edi
+  » bsr esi, edi
+  » bswap esi
+  » bt esi, edi
+  » bt esi, 10
+  » btc esi, edi
+  » btc esi, 10
+  » btr esi, edi
+  » btr esi, 10
+  » bts esi, edi
+  » bts edi, 10
+  » call [rax + 16]
+  » cbw
+  » cdq
+  » cdqe
+  » clc
+  » cld
+  » clflush [rsi]
+  » clflushopt [rsi]
+  » clwb [rsi]
+  » cli
+  » cmc
+  » cmovae esi, edi
+  » cmp esi, edi
+  » cmpsb
+  » cmpsw
+  » cmpsd
+  » cmpsq
+  » cmpxchg [rsi], edi
+  » cmpxchg8b [rsi]
+  » cmpxchg16b [rsi]
+  » cpuid
+  » crc32 esi, bl
+  » crc32 esi, bx
+  » crc32 esi, ebx
+  » crc32 rsi, bl
+  » crc32 rsi, rax
+  » cqo
+  » cwd
+  » cwde
+  » dec esi
+  » div esi
+  » enter 10, 20
+  » hlt
+  » idiv esi
+  » imul esi
+  » inc esi
+  » int 0x12
+  » int3
+  » invd
+  » iret
+  » iretd
+  » iretq
+  » 1:
+  » jne 1b
+  » jecxz 1f
+  » jrcxz 1f
+  » lea esi, [rbx+rdi]
+  » leave
+  » lfence
+  » 1:
+  » lock add [rsi], eax
+  » lodsb
+  » lodsw
+  » lodsd
+  » lodsq
+  » loop 1b
+  » loope 1b
+  » loopne 1b
+  » mfence
+  » mov esi, edi
+  » movbe esi, [rdi]
+  » movnti [rsi], eax
+  » movnti [rsi], rax
+  » movsx rsi, edi
+  » movzx esi, al
+  » mul esi
+  » neg esi
+  » not esi
+  » pause
+  » pop rsi
+  » push rsi
+  » rcl esi, 1
+  » rcr esi, 1
+  » rdmsr
+  » rdtsc
+  » rdtscp
+  » rep movsb
+  » repe cmpsb
+  » repne cmpsw
+  » ret
+  » ret 16
+  » rol esi, 1
+  » ror esi, 1
+  » sal esi, 1
+  » sar esi, 1
+  » sbb esi, edi
+  » scasb
+  » scasw
+  » scasd
+  » scasq
+  » seto al
+  » seto ah
+  » sfence
+  » shl esi, 1
+  » shld esi, edi, cl
+  » shr esi, 1
+  » shrd esi, edi, 3
+  » stc
+  » std
+  » sti
+  » stosb
+  » stosw
+  » stosd
+  » stosq
+  » sub esi, edi
+  » test esi, edi
+  » tzcnt esi, edi
+  » wbinvd
+  » wrmsr
+  » xadd [rsi], edi
+  » xchg esi, edi
+  » xlatb
+  » xor esi, edi
+  
+  return (void(*)()) assembler.Build();
+}
+
+static void DoLabelTest()
+{
+  Javelin::Assembler assembler;
+
+  » .macro localNumericTest
+  » 0:
+  »  jmp 0f
+  » 1:
+  »  jmp 1f
+  » 0:
+  »  jmp 1b
+  » 1:
+  » .endm
+  
+  »  int3
+  » 0:
+  »  add edi, {1}
+  »  jmp 0f
+  » *main:
+  »  add edi, {1}
+  »  localNumericTest
+  »  jmp 0b
+  » *0:
+  »  add edi, {1}
+  »  localNumericTest
+  »  jmp *0f
+  » 0:
+  »  add edi, {1}
+  »  jmp *0b
+  » {0}:
+  »  add edi, {1}
+  »  localNumericTest
+  »  jmp {0}f
+  » localName:
+  »  add edi, {1}
+  »  jmp {0}b
+  » *0:
+  »  add edi, {1}
+  »  jmp localName
+  » {0}:
+  »  add edi, {1}
+  »  mov eax, edi
+  »  ret
+
+  void *result = assembler.Build();
+  int (*mainEntry)(int) = (int(*)(int)) assembler.GetNamedLabelAddress("main");
+  int (*mainEntry2)(int) = (int(*)(int)) assembler.GetLabelIdAddress(JASM_LABEL_ID("main"));
+  int (*numericEntry)(int) = (int(*)(int)) assembler.GetNumericLabelAddress(0);
+  int (*expressionEntry)(int) = (int(*)(int)) assembler.GetExpressionLabelAddress(0);
+
+  assert(mainEntry == mainEntry2);
+  assert(mainEntry(100) == 108);
+  assert(numericEntry(200) == 204);
+  assert(expressionEntry(300) == 301);
+  
+  Javelin::SimpleJitMemoryManager::StaticInstanceRelease(result);
+}
+
+static void DoReg8Test()
+{
+  Javelin::Assembler assembler;
+  
+  » mov ah, 1
+  » mov r8b, 5
+  » mov esi, r8d    // sil = 5
+  » mov dl, ah      // dl = 1
+  » add r8b, dl     // r8 = 6
+  » movzx eax, ah   // eax = 1
+  » movzx ecx, sil  // ecx = 5
+  » add rax, rcx    // eax = 6
+  » movzx edx, r8b  // edx = 6
+  » add rax, rdx    // rax = 12
+  » movzx rcx, sil  // rcx = 5
+  » add rax, rcx    // rax = 17
+  » movzx rdx, r8b  // rdx = 6
+  » add rax, rdx    // rax = 23
+  » ret
+
+  int64_t (*function)() = (int64_t(*)()) assembler.Build();
+  
+  assert(function() == 23);
+}
+
+static void DoCallTest()
+{
+  Javelin::Assembler assembler;
+  
+  int (*Double)(int) = [](int x) { return 2 * x; };
+  
+  »  mov rax, doublefunction
+  »  call rax
+  »  mov edi, eax
+  »  lea rax, [1f]
+  »  call [rax]
+  »  mov edi, eax
+  »  call [doublefunction]
+  »  mov edi, eax
+  »  call [1f]
+  »  mov edi, eax
+  »  call {Double}
+  »  call asd
+  »  ret
+  » asd:
+  »  inc eax
+  »  ret
+  » 1:
+  » doublefunction dq {Double}
+  
+  int (*function)(int) = (int(*)(int)) assembler.Build();
+
+  assert(function(100) == 3201);
+}
+
+class Modifier
+{
+public:
+  virtual ~Modifier() { }
+  virtual int Calculate(int) const = 0;
+};
+
+// Returns an object that calculates 2x + c
+static Modifier* CreateValue(int i)
+{
+  Javelin::Assembler assembler;
+  
+  void (*DeleteValue)(void*) = Javelin::SimpleJitMemoryManager::StaticInstanceRelease;
+  
+  »  dq vtbl
+  » vtbl dq destructor, {DeleteValue}, calculate
+  » destructor:
+  »  ret
+  » calculate:
+  »  lea eax, [rsi+rsi+{i}]
+  »  ret
+  
+  return (Modifier*) assembler.Build();
+}
+
+int main()
+{
+  void (*x87Test)() = CreateX87Test();
+  printf("x87Test: %p\n", x87Test);
+  
+  void (*mmxTest)() = CreateMMXTest();
+  printf("mmxTest: %p\n", mmxTest);
+  
+  void (*sseTest)() = CreateSSETest();
+  printf("sseTest: %p\n", sseTest);
+  
+  void (*sse2Test)() = CreateSSE2Test();
+  printf("sse2Test: %p\n", sse2Test);
+  
+  void (*ssse3Test)() = CreateSSSE3Test();
+  printf("ssse3Test: %p\n", ssse3Test);
+  
+  void (*sse3Test)() = CreateSSE3Test();
+  printf("sse3Test: %p\n", sse3Test);
+  
+  void (*sse41Test)() = CreateSSE41Test();
+  printf("sse41Test: %p\n", sse41Test);
+  
+  void (*sse42Test)() = CreateSSE42Test();
+  printf("sse42Test: %p\n", sse42Test);
+  
+  void (*avxTest)() = CreateAVXTest();
+  printf("avxTest: %p\n", avxTest);
+  
+  void (*aesTest)() = CreateAESTest();
+  printf("aesTest: %p\n", aesTest);
+  
+  void (*abmTest)() = CreateABMTest();
+  printf("abmTest: %p\n", abmTest);
+  
+  void (*bmi1Test)() = CreateBMI1Test();
+  printf("bmi1Test: %p\n", bmi1Test);
+
+  void (*bmi2Test)() = CreateBMI2Test();
+  printf("bmi2Test: %p\n", bmi2Test);
+  
+  void (*addressingModeTest)() = CreateAddressingModeTest();
+  printf("addressingModeTest: %p\n", addressingModeTest);
+  
+  void (*opcodeTest)() = CreateOpcodeTest();
+  printf("opcodeTest: %p\n", opcodeTest);
+
+  void (*movTest)() = CreateMovTest();
+  printf("movTest: %p\n", movTest);
+  
+  int64_t (*movRAXTest)() = CreateMovRAXFunction();
+  printf("RaxTest: %llx\n", movRAXTest());
+  
+  void (*pushPopTest)() = CreatePushPopTest();
+  pushPopTest();
+
+  DynamicFunction function1 = CreateFunction(0);
+  DynamicFunction function2 = CreateFunction(100);
+  DynamicFunction function3 = CreateFunction(10000);
+
+  printf("Result1: %d\n", function1(100));
+  printf("Result2: %d\n", function2(100));
+  printf("Result3: %d\n", function3(100));
+  
+  DoLabelTest();
+  
+  DoCallTest();
+  
+  DoReg8Test();
+  
+  Modifier* modifier = CreateValue(10);
+  assert(modifier->Calculate(100) == 210);
+  delete modifier;
+  
+  return 0;
+}

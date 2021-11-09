@@ -37,6 +37,7 @@ namespace Javelin
 		// After this, the Assembler class is not required and can be destroyed.
 		void* Build();
 		
+        void* GetLabelIdAddress(uint32_t labelId) const       { return labels.GetIfExists(labelId); }
 		void* GetNamedLabelAddress(const char *label) const   { return labels.GetIfExists(GetLabelIdForNamed(label)); }
 		void* GetNumericLabelAddress(uint32_t label) const    { return labels.GetIfExists(GetLabelIdForNumeric(label)); }
 		void* GetExpressionLabelAddress(uint32_t label) const { return labels.GetIfExists(GetLabelIdForExpression(label)); }

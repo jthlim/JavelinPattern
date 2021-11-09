@@ -16,6 +16,7 @@ namespace Javelin::Assembler
 		{
 			Unknown,
 			Arm64,
+            RiscV,
 			X64,
 		};
 

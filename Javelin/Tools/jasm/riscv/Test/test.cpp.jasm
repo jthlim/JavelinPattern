@@ -1,0 +1,40 @@
+#include "Javelin/Assembler/riscv/Assembler.h"
+#include <stdio.h>
+
+class Modifier
+{
+public:
+  virtual ~Modifier() { }
+  virtual int Calculate(int x) const = 0;
+};
+
+static Modifier* CreateFilter(int i, int j)
+{
+  Javelin::Assembler assembler;
+
+  void (*DeletingDestructor)(void*) = [](void *v) { Javelin::SimpleJitMemoryManager::GetInstance()->Release(v); };
+
+  » object:
+  »  .quad vtbl
+  » vtbl:
+  »  .quad destructor, {DeletingDestructor}, getValue
+  » getValue:
+  »  addi a0, a1, {-i}
+  »  sltiu a0, a0, {j-i+1}
+  » destructor:
+  »  ret
+
+  return (Modifier*) assembler.Build();
+}
+
+int main()
+{
+  Modifier *modifier = CreateFilter(15, 21);
+  for(int i = 0; i < 256; ++i)
+  {
+    printf("%d -> %d\n", i, modifier->Calculate(i));
+  }
+  delete modifier;
+
+  return 0;
+}

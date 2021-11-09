@@ -163,7 +163,7 @@ const EncodingVariant *Instruction::FindFirstMatch(int operandLength, const Oper
 
 void Instruction::AddToAssembler(const std::string &opcodeName, Assembler &assembler, ListAction& listAction, int operandLength, const Operand* *const operands) const
 {
-	static const AlternateActionCondition* (*kActionConditions[])(const Operand *) =
+	static const AlternateActionCondition* (*const kActionConditions[])(const Operand *) =
 	{
 		#define TAG(x,y,z) &y##AlternateActionCondition::Create,
 		#include "MatchTags.h"
@@ -252,6 +252,7 @@ void Instruction::AddToAssembler(const std::string &opcodeName, Assembler &assem
 				uint64_t operandMatchMask = encoding->operandMatchMasks[expressionIndex] & operands[expressionIndex]->matchBitfield;
 				uint64_t operandMatchBitIndex = __builtin_ctzll(operandMatchMask);
 				condition = (*kActionConditions[operandMatchBitIndex])(operands[expressionIndex]);
+                
 				if(operands[expressionIndex]->IsExpression())
 				{
 					int operandExpressionSize = kExpressionSize[operandMatchBitIndex];

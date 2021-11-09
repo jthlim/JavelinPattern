@@ -3,6 +3,7 @@
 #include "Javelin/Tools/jasm/arm64/Instruction.h"
 
 #include "Javelin/Assembler/arm64/ActionType.h"
+#include "Javelin/Assembler/BitUtility.h"
 #include "Javelin/Tools/jasm/AssemblerException.h"
 #include "Javelin/Tools/jasm/CommandLine.h"
 #include "Javelin/Tools/jasm/Log.h"
@@ -103,8 +104,8 @@ void ImmediateOperand::UpdateMatchBitfield()
 		matchBitfield |= MatchNot64HwImm16;
 	}
 
-	if((value >> 12) == 0) matchBitfield |= MatchUImm12;
-	if((value >> 16) == 0) matchBitfield |= MatchUImm16;
+    if(BitUtility::IsValidUnsignedImmediate(value, 12)) matchBitfield |= MatchUImm12;
+    if(BitUtility::IsValidUnsignedImmediate(value, 16)) matchBitfield |= MatchUImm16;
 
 	if((value >> 32) == 0)
 	{
@@ -187,8 +188,6 @@ const EncodingVariant *Instruction::FindFirstMatch(int operandLength, const Oper
 
 void Instruction::AddToAssembler(const std::string &opcodeName, Assembler &assembler, ListAction& listAction, int operandLength, const Operand* *const operands) const
 {
-	AlternateAction *alternateAction = nullptr;
-	
 	int numberOfExpressions = 0;
 	int expressionIndex = -1;
 	for(int i = 0; i < operandLength; ++i)
@@ -227,71 +226,14 @@ void Instruction::AddToAssembler(const std::string &opcodeName, Assembler &assem
 				return;
 			}
 			
-			ListAction* subList = new ListAction();
-			
 			(*encoder)(assembler,
-					   *subList,
+					   listAction,
 					   *this,
 					   *encoding,
 					   encodingOperands);
-			
-			if(!subList->HasData())
-			{
-				delete subList;
-				continue;
-			}
-			
-			const AlternateActionCondition *condition;
-			if(numberOfExpressions == 1)
-			{
-				condition = AlwaysAlternateActionCondition::Create(operands[expressionIndex]);
-			}
-			else
-			{
-				AndAlternateActionCondition *andCondition = new AndAlternateActionCondition;
-				condition = andCondition;
-				for(int i = 0; i < operandLength; ++i)
-				{
-					if(operands[i]->MayHaveMultipleRepresentations())
-					{
-						const AlternateActionCondition *condition = AlwaysAlternateActionCondition::Create(operands[i]);
-						if(condition != &AlwaysAlternateActionCondition::instance)
-						{
-							andCondition->AddCondition(condition);
-						}
-					}
-				}
-				if(andCondition->GetNumberOfConditions() == 0)
-				{
-					delete andCondition;
-					condition = &AlwaysAlternateActionCondition::instance;
-				}
-				else if (andCondition->GetNumberOfConditions() == 1) {
-					condition = andCondition->GetCondition(0);
-					andCondition->ClearConditions();
-					delete andCondition;
-				}
-			}
 
-			if(!alternateAction) alternateAction = new AlternateAction();
-			alternateAction->Add(subList, condition);
-			if(condition == &AlwaysAlternateActionCondition::instance) break;
+            return;
 		}
-	}
-
-	if(alternateAction)
-	{
-		// This optimization converts a single alternate to "Always".
-		if(alternateAction->GetNumberOfAlternates() == 1)
-		{
-			Action *action = alternateAction->GetSingleAlternateAndClearAlternateList();
-			listAction.Append(action);
-			delete alternateAction;
-			return;
-		}
-		
-		listAction.Append(alternateAction);
-		return;
 	}
 
 	assert(operandLength <= 16);

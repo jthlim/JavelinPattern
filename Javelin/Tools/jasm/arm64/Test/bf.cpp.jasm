@@ -1,0 +1,682 @@
+// Adapted from http://corsix.github.io/dynasm-doc/tutorial.html
+
+#include "Javelin/Assembler/arm64/Assembler.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/time.h>
+
+#define RUN_BUILD_BENCHMARK 0
+#define USE_JASM            1  // When turned off, use code that directly populates a JitVector
+
+#define TAPE_SIZE 32768
+#define MAX_NESTING 100
+
+unsigned char tape[TAPE_SIZE];
+
+typedef struct bf_state
+{
+  unsigned char* tape;
+  void (*put_ch)(unsigned char);
+  unsigned char (*get_ch)();
+} bf_state_t;
+
+static uint64_t GetMicroTime()
+{
+  timeval tp;
+  gettimeofday(&tp, nullptr);
+  
+  return tp.tv_sec * 1000000ULL + tp.tv_usec;
+}
+
+#define bad_program(s) exit(fprintf(stderr, "bad program near %.16s: %s\n", program, s))
+
+static bool IsPowerOf2(unsigned int i)  { return (i & (i-1) ) == 0; }
+
+static void bf_putchar(unsigned char c)
+{
+  putchar((int)c);
+}
+
+static unsigned char bf_getchar()
+{
+  return (unsigned char) getchar();
+}
+
+static bool bf_isBalancedLoopWithSingleDecrement(const char *program)
+{
+  int n;
+  int activeOffset = 0;
+  int offset0Adjust = 0;
+  for(;;) {
+    switch(*program++) {
+      case '<':
+        for(n = 1; *program == '<'; ++n, ++program);
+        activeOffset -= n;
+        break;
+      case '>':
+        for(n = 1; *program == '>'; ++n, ++program);
+        activeOffset += n;
+        break;
+      case '+':
+        for(n = 1; *program == '+'; ++n, ++program);
+        if(activeOffset == 0) offset0Adjust += n;
+        break;
+      case '-':
+        for(n = 1; *program == '-'; ++n, ++program);
+        if(activeOffset == 0) offset0Adjust -= n;
+        break;
+      case ',':
+        return false;
+      case '.':
+        return false;
+      case '[':
+        return false;
+      case ']':
+        return activeOffset == 0 && offset0Adjust == -1;
+      case 0:
+        program = "<EOF>";
+        bad_program("[ without matching ]");
+    }
+  }
+}
+
+
+#if USE_JASM
+#pragma mark - USE_JASM == 1
+
+» .define pTape x19
+» .define putch x20
+» .define getch x21
+
+static void UpdateOffset(Javelin::Assembler &assembler, int &activeOffset)
+{
+  if(activeOffset < 2048) {
+    int delta = 2048 - activeOffset;
+    » sub pTape, pTape, #{delta}
+    activeOffset = 2048;
+  } else if(activeOffset > 2048) {
+    int delta = activeOffset - 2048;
+    » add pTape, pTape, #{delta}
+    activeOffset = 2048;
+  }
+}
+
+static void UpdateOffsetBounds(Javelin::Assembler &assembler, int &activeOffset)
+{
+  if(activeOffset < 0) {
+    int delta = 2048 - activeOffset;
+    » sub pTape, pTape, #{delta}
+    activeOffset = 2048;
+  } else if(activeOffset >= 4096)  {
+    int delta = activeOffset - 2048;
+    » add pTape, pTape, #{delta}
+    activeOffset = 2048;
+  }
+}
+
+static void bf_emitBalancedLoopWithSingleDecrement(Javelin::Assembler &assembler, const char *&program, int baseActiveOffset)
+{
+  int n;
+  int activeOffset = 0;
+  int offset0Adjust = 0;
+  » ldrb w1, [pTape, #{baseActiveOffset}]
+  for(;;) {
+    switch(*program++) {
+      case '<':
+        for(n = 1; *program == '<'; ++n, ++program);
+        activeOffset -= n;
+        break;
+      case '>':
+        for(n = 1; *program == '>'; ++n, ++program);
+        activeOffset += n;
+        break;
+      case '+':
+        for(n = 1; *program == '+'; ++n, ++program);
+        if(activeOffset == 0) offset0Adjust += n;
+        else if(IsPowerOf2(n)) {
+          » ldrsb w0, [pTape, #{baseActiveOffset+activeOffset}]
+          » add w0, w0, w1, lsl #{__builtin_ctz(n)}
+          » strb w0, [pTape, #{baseActiveOffset+activeOffset}]
+        } else {
+          » ldrsb w0, [pTape, #{baseActiveOffset+activeOffset}]
+          » movz w2, #{n}
+          » madd w0, w1, w2, w0
+          » strb w0, [pTape, #{baseActiveOffset+activeOffset}]
+        }
+        break;
+      case '-':
+        for(n = 1; *program == '-'; ++n, ++program);
+        if(activeOffset == 0) offset0Adjust += n;
+        else if(IsPowerOf2(n)) {
+          » ldrsb w0, [pTape, #{baseActiveOffset+activeOffset}]
+          » sub w0, w0, w1, lsl #{__builtin_ctz(n)}
+          » strb w0, [pTape, #{baseActiveOffset+activeOffset}]
+        } else {
+          » ldrsb w0, [pTape, #{baseActiveOffset+activeOffset}]
+          » movz w2, #{n}
+          » msub w0, w1, w2, w0
+          » strb w0, [pTape, #{baseActiveOffset+activeOffset}]
+        }
+        break;
+      case ']':
+        » strb wzr, [pTape, #{baseActiveOffset}]
+        return;
+    }
+  }
+}
+
+static void bf_compile(const char* program, Javelin::Assembler &assembler)
+{
+  unsigned loops[MAX_NESTING];
+  int n;
+  int nloops = 0;
+  int labelIndex = 0;
+  int activeOffset = 2048;
+  int lastStore = -1;
+  const char *start = program;
+
+  for(;;) {
+    switch(*program++) {
+    case '<':
+      for(n = 1; *program == '<'; ++n, ++program);
+      activeOffset -= n;
+      break;
+    case '>':
+      for(n = 1; *program == '>'; ++n, ++program);
+      activeOffset += n;
+      break;
+    case '+':
+      for(n = 1; *program == '+'; ++n, ++program);
+      UpdateOffsetBounds(assembler, activeOffset);
+      » ldrsb w0, [pTape, #{activeOffset}]
+      » add w0, w0, #{n}
+      » strb w0, [pTape, #{activeOffset}]
+      lastStore = activeOffset;
+      break;
+    case '-':
+      for(n = 1; *program == '-'; ++n, ++program);
+      UpdateOffsetBounds(assembler, activeOffset);
+      » ldrsb w0, [pTape, #{activeOffset}]
+      » sub w0, w0, #{n}
+      » strb w0, [pTape, #{activeOffset}]
+      lastStore = activeOffset;
+      break;
+    case ',':
+      UpdateOffsetBounds(assembler, activeOffset);
+      » blr getch
+      » strb w0, [pTape, #{activeOffset}]
+      lastStore = activeOffset;
+      break;
+    case '.':
+      UpdateOffsetBounds(assembler, activeOffset);
+      » ldrb w0, [pTape, #{activeOffset}]
+      » blr putch
+      lastStore = -1;
+      break;
+    case '[':
+      if(nloops == MAX_NESTING)
+        bad_program("Nesting too deep");
+      if(program[0] == '-' && program[1] == ']') {
+        // Special case zero detection,
+        UpdateOffsetBounds(assembler, activeOffset);
+        » strb wzr, [pTape, #{activeOffset}]
+        program += 2;
+      } else if(bf_isBalancedLoopWithSingleDecrement(program)) {
+        bf_emitBalancedLoopWithSingleDecrement(assembler, program, activeOffset);
+      } else {
+        // If the previuos symbol was also a while (*ptr)
+        // Then no updates to activeOffset or a comparison need to be made.
+        if(program-2 < start || program[-2] != '[') {
+          if(activeOffset != lastStore) {
+            UpdateOffsetBounds(assembler, activeOffset);
+            » ldrb w0, [pTape, #{activeOffset}]
+          }
+          UpdateOffset(assembler, activeOffset);
+          » cbz w0, {labelIndex+1}f
+          »{labelIndex}:
+          loops[nloops] = labelIndex|1;
+        } else {
+          »{labelIndex}:
+          loops[nloops] = labelIndex;
+        }
+        ++nloops;
+        labelIndex += 2;
+      }
+      lastStore = -1;
+      break;
+    case ']':
+      if(nloops == 0) {
+        bad_program("] without matching [");
+      } else {
+        int labelIndex = loops[--nloops];
+        if(activeOffset != lastStore) {
+          UpdateOffsetBounds(assembler, activeOffset);
+          » ldrb w0, [pTape, #{activeOffset}]
+        }
+        UpdateOffset(assembler, activeOffset);
+        if(labelIndex & 1)
+        {
+          » cbnz w0, {labelIndex-1}b
+          »{labelIndex}:
+        }
+        else
+        {
+          » cbnz w0, {labelIndex}b
+        }
+      }
+      break;
+    case 0:
+      if(nloops != 0) {
+        program = "<EOF>";
+        bad_program("[ without matching ]");
+      }
+      return;
+    }
+  }
+}
+
+static void bf_run(const char* program)
+{
+#if RUN_BUILD_BENCHMARK
+  for(int i = 0; i < 40000; ++i)
+#endif
+  {
+    Javelin::Assembler assembler;
+    
+#if !RUN_BUILD_BENCHMARK
+    uint64_t startParse = GetMicroTime();
+#endif
+    » stp pTape, putch, [sp, #-16]!
+    » stp getch, lr, [sp, #-16]!
+    » ldp pTape, putch, [x0]
+    » ldr getch, [x0, #16]
+    bf_compile(program, assembler);
+    » ldp getch, lr, [sp], #16
+    » ldp pTape, putch, [sp], #16
+    » ret
+
+#if !RUN_BUILD_BENCHMARK
+    uint64_t endParse = GetMicroTime();
+    printf("Parse time: %lluus\n", endParse - startParse);
+
+    uint64_t startBuild = GetMicroTime();
+#endif
+    void (*function)(bf_state_t*) = (void(*)(bf_state_t*))assembler.Build();
+#if !RUN_BUILD_BENCHMARK
+    uint64_t endBuild = GetMicroTime();
+    printf("Build time: %lluus\n", endBuild - startBuild);
+
+    bf_state_t state;
+    state.tape = &tape[0] - 2048;
+    state.get_ch = bf_getchar;
+    state.put_ch = bf_putchar;
+    function(&state);
+#endif
+    
+    Javelin::SimpleJitMemoryManager::StaticInstanceRelease((void*) function);
+  }
+}
+
+#else
+#pragma mark - USE_JASM == 0
+
+» // Force #pragma line so debugging the below section works as expected.
+
+struct BuildData
+{
+  struct LabelData
+  {
+    uint32_t offsetOfBackLabel;
+    uint32_t offsetOfForwardLabelReference;
+  };
+  
+  Javelin::JitVector<uint32_t> opcodes;
+  Javelin::JitVector<LabelData> labels;
+};
+
+#define pTapeRegisterIndex 19
+#define putchRegisterIndex 20
+#define getchRegisterIndex 21
+
+static void UpdateOffset(BuildData &buildData, int &activeOffset)
+{
+  if(activeOffset < 2048) {
+    int delta = 2048 - activeOffset;
+//    » sub pTape, pTape, #{delta}
+    buildData.opcodes.AppendValue((0xd1000000 | (pTapeRegisterIndex << 5) | pTapeRegisterIndex) | (delta << 10));
+    activeOffset = 2048;
+  } else if(activeOffset > 2048) {
+    int delta = activeOffset - 2048;
+//    » add pTape, pTape, #{delta}
+    buildData.opcodes.AppendValue((0x91000000 | (pTapeRegisterIndex << 5) | pTapeRegisterIndex) | (delta << 10));
+    activeOffset = 2048;
+  }
+}
+
+static void UpdateOffsetBounds(BuildData &buildData, int &activeOffset)
+{
+  if(activeOffset < 0) {
+    int delta = 2048 - activeOffset;
+//    » sub pTape, pTape, #{delta}
+    buildData.opcodes.AppendValue((0xd1000000 | (pTapeRegisterIndex << 5) | pTapeRegisterIndex) | (delta << 10));
+    activeOffset = 2048;
+  } else if(activeOffset >= 4096)  {
+    int delta = activeOffset - 2048;
+//    » add pTape, pTape, #{delta}
+    buildData.opcodes.AppendValue((0x91000000 | (pTapeRegisterIndex << 5) | pTapeRegisterIndex) | (delta << 10));
+    activeOffset = 2048;
+  }
+}
+
+static void bf_emitBalancedLoopWithSingleDecrement(BuildData &buildData, const char *&program, int baseActiveOffset)
+{
+  int n;
+  int activeOffset = 0;
+  int offset0Adjust = 0;
+//  » ldrb w1, [pTape, #{baseActiveOffset}]
+  buildData.opcodes.AppendValue((0x39400000 | (pTapeRegisterIndex << 5) | 1) | (baseActiveOffset << 10));
+  for(;;) {
+    switch(*program++) {
+      case '<':
+        for(n = 1; *program == '<'; ++n, ++program);
+        activeOffset -= n;
+        break;
+      case '>':
+        for(n = 1; *program == '>'; ++n, ++program);
+        activeOffset += n;
+        break;
+      case '+':
+        for(n = 1; *program == '+'; ++n, ++program);
+        if(activeOffset == 0) offset0Adjust += n;
+        else if(IsPowerOf2(n)) {
+//          » ldrsb w0, [pTape, #{baseActiveOffset+activeOffset}]
+          buildData.opcodes.AppendValue((0x39c00000 | (pTapeRegisterIndex << 5)) | ((baseActiveOffset+activeOffset) << 10));
+//          » add w0, w0, w1, lsl #{__builtin_ctz(n)}
+          buildData.opcodes.AppendValue((0x0b000000 | (1 << 16)) | ((__builtin_ctz(n)) << 10));
+//          » strb w0, [pTape, #{baseActiveOffset+activeOffset}]
+          buildData.opcodes.AppendValue((0x39000000 | (pTapeRegisterIndex << 5)) | ((baseActiveOffset+activeOffset) << 10));
+        } else {
+//          » ldrsb w0, [pTape, #{baseActiveOffset+activeOffset}]
+          buildData.opcodes.AppendValue((0x39c00000 | (pTapeRegisterIndex << 5)) | ((baseActiveOffset+activeOffset) << 10));
+//          » movz w2, #{n}
+          buildData.opcodes.AppendValue((0x52800000 | 2) | (n << 5));
+//          » madd w0, w1, w2, w0
+          buildData.opcodes.AppendValue((0x1b000000 | (1 << 5) | (2 << 16)));
+//          » strb w0, [pTape, #{baseActiveOffset+activeOffset}]
+          buildData.opcodes.AppendValue((0x39000000 | (pTapeRegisterIndex << 5)) | ((baseActiveOffset+activeOffset) << 10));
+        }
+        break;
+      case '-':
+        for(n = 1; *program == '-'; ++n, ++program);
+        if(activeOffset == 0) offset0Adjust += n;
+        else if(IsPowerOf2(n)) {
+//          » ldrsb w0, [pTape, #{baseActiveOffset+activeOffset}]
+          buildData.opcodes.AppendValue((0x39c00000 | (pTapeRegisterIndex << 5)) | ((baseActiveOffset+activeOffset) << 10));
+//          » sub w0, w0, w1, lsl #{__builtin_ctz(n)}
+          buildData.opcodes.AppendValue((0x4b000000 | (1 << 16)) | ((__builtin_ctz(n)) << 10));
+//          » strb w0, [pTape, #{baseActiveOffset+activeOffset}]
+          buildData.opcodes.AppendValue((0x39000000 | (pTapeRegisterIndex << 5)) | ((baseActiveOffset+activeOffset) << 10));
+        } else {
+//          » ldrsb w0, [pTape, #{baseActiveOffset+activeOffset}]
+          buildData.opcodes.AppendValue((0x39c00000 | (pTapeRegisterIndex << 5)) | ((baseActiveOffset+activeOffset) << 10));
+//          » movz w2, #{n}
+          buildData.opcodes.AppendValue((0x52800000 | 2) | (n << 5));
+//          » msub w0, w1, w2, w0
+          buildData.opcodes.AppendValue((0x1b008000 | (1 << 5) | (2 << 16)));
+//          » strb w0, [pTape, #{baseActiveOffset+activeOffset}]
+          buildData.opcodes.AppendValue((0x39000000 | (pTapeRegisterIndex << 5)) | ((baseActiveOffset+activeOffset) << 10));
+        }
+        break;
+      case ']':
+//        » strb wzr, [pTape, #{baseActiveOffset}]
+        buildData.opcodes.AppendValue((0x39000000 | (pTapeRegisterIndex << 5) | 31) | (baseActiveOffset << 10));
+        return;
+    }
+  }
+}
+
+static void bf_compile(const char* program, BuildData &buildData)
+{
+  unsigned loops[MAX_NESTING];
+  int n;
+  int nloops = 0;
+  int labelIndex = 0;
+  int activeOffset = 2048;
+  int lastStore = -1;
+  const char *start = program;
+  
+  for(;;) {
+    switch(*program++) {
+      case '<':
+        for(n = 1; *program == '<'; ++n, ++program);
+        activeOffset -= n;
+        break;
+      case '>':
+        for(n = 1; *program == '>'; ++n, ++program);
+        activeOffset += n;
+        break;
+      case '+':
+        for(n = 1; *program == '+'; ++n, ++program);
+        UpdateOffsetBounds(buildData, activeOffset);
+      {
+//        » ldrsb w0, [pTape, #{activeOffset}]
+        buildData.opcodes.AppendValue((0x39c00000 | (pTapeRegisterIndex << 5)) | (activeOffset << 10));
+//        » add w0, w0, #{n}
+        buildData.opcodes.AppendValue(0x11000000 | (n << 10));
+//        » strb w0, [pTape, #{activeOffset}]
+        buildData.opcodes.AppendValue((0x39000000 | (pTapeRegisterIndex << 5)) | (activeOffset << 10));
+      }
+        lastStore = activeOffset;
+        break;
+      case '-':
+        for(n = 1; *program == '-'; ++n, ++program);
+        UpdateOffsetBounds(buildData, activeOffset);
+      {
+//        » ldrsb w0, [pTape, #{activeOffset}]
+        buildData.opcodes.AppendValue((0x39c00000 | (pTapeRegisterIndex << 5)) | (activeOffset << 10));
+//        » sub w0, w0, #{n}
+        buildData.opcodes.AppendValue(0x51000000 | (n << 10));
+//        » strb w0, [pTape, #{activeOffset}]
+        buildData.opcodes.AppendValue((0x39000000 | (pTapeRegisterIndex << 5)) | (activeOffset << 10));
+      }
+        lastStore = activeOffset;
+        break;
+      case ',':
+        
+//        » blr getch
+        buildData.opcodes.AppendValue(0xd63f0000 | (getchRegisterIndex << 5));
+        UpdateOffsetBounds(buildData, activeOffset);
+//        » strb w0, [pTape, #{activeOffset}]
+        buildData.opcodes.AppendValue((0x39000000 | (pTapeRegisterIndex << 5)) | (activeOffset << 10));
+        lastStore = activeOffset;
+        break;
+      case '.':
+        UpdateOffsetBounds(buildData, activeOffset);
+      {
+//        » ldrb w0, [pTape, #{activeOffset}]
+        buildData.opcodes.AppendValue((0x39400000 | (pTapeRegisterIndex << 5)) | ((activeOffset) << 10));
+//        » blr putch
+        buildData.opcodes.AppendValue(0xd63f0000 | (putchRegisterIndex << 5));
+      }
+        lastStore = -1;
+        break;
+      case '[':
+        if(nloops == MAX_NESTING)
+          bad_program("Nesting too deep");
+        if(program[0] == '-' && program[1] == ']') {
+          // Special case zero detection,
+          UpdateOffsetBounds(buildData, activeOffset);
+//          » strb wzr, [pTape, #{activeOffset}]
+          buildData.opcodes.AppendValue((0x39000000 | (pTapeRegisterIndex << 5) | 31) | (activeOffset << 10));
+          program += 2;
+        } else if(bf_isBalancedLoopWithSingleDecrement(program)) {
+          bf_emitBalancedLoopWithSingleDecrement(buildData, program, activeOffset);
+        } else {
+          // If the previuos symbol was also a while (*ptr)
+          // Then no updates to activeOffset or a comparison need to be made.
+          BuildData::LabelData &labelData = buildData.labels.Append();
+          labelData.offsetOfForwardLabelReference = ~0U;
+          if(program-2 < start || program[-2] != '[') {
+            if(activeOffset != lastStore) {
+              UpdateOffsetBounds(buildData, activeOffset);
+//              » ldrb w0, [pTape, #{activeOffset}]
+              buildData.opcodes.AppendValue((0x39c00000 | (pTapeRegisterIndex << 5)) | (activeOffset << 10));
+            }
+            UpdateOffset(buildData, activeOffset);
+            labelData.offsetOfForwardLabelReference = buildData.opcodes.GetNumberOfBytes();
+//            » cbz w0, {labelIndex+1}f
+            buildData.opcodes.AppendValue(0); // Space for cbz
+          }
+//          »{labelIndex}:
+          labelData.offsetOfBackLabel = buildData.opcodes.GetNumberOfBytes();
+          loops[nloops] = labelIndex;
+          ++nloops;
+          ++labelIndex;
+        }
+        lastStore = -1;
+        break;
+      case ']':
+        if(nloops == 0) {
+          bad_program("] without matching [");
+        } else {
+          int labelIndex = loops[--nloops];
+          if(activeOffset != lastStore) {
+            UpdateOffsetBounds(buildData, activeOffset);
+//            » ldrb w0, [pTape, #{activeOffset}]
+            buildData.opcodes.AppendValue((0x39c00000 | (pTapeRegisterIndex << 5)) | (activeOffset << 10));
+          }
+          UpdateOffset(buildData, activeOffset);
+          const BuildData::LabelData &label = buildData.labels[labelIndex];
+//          » cbnz w0, {labelIndex}b
+          {
+            int delta = label.offsetOfBackLabel - buildData.opcodes.GetNumberOfBytes();
+            buildData.opcodes.AppendValue(0x35000000 | (((delta >> 2) & 0x7ffff) << 5));
+          }
+          if(label.offsetOfForwardLabelReference != ~0U)
+          {
+            //        »{labelIndex}:
+            int delta = buildData.opcodes.GetNumberOfBytes() - label.offsetOfForwardLabelReference;
+            buildData.opcodes.GetElementAtByteIndex(label.offsetOfForwardLabelReference) =
+              0x34000000 | (((delta >> 2) & 0x7ffff) << 5);
+          }
+        }
+        break;
+      case 0:
+        if(nloops != 0) {
+          program = "<EOF>";
+          bad_program("[ without matching ]");
+        }
+        return;
+    }
+  }
+}
+
+static void bf_run(const char* program)
+{
+#if RUN_BUILD_BENCHMARK
+  for(int i = 0; i < 40000; ++i)
+#endif
+  {
+    BuildData buildData;
+    
+#if !RUN_BUILD_BENCHMARK
+    uint64_t startParse = GetMicroTime();
+#endif
+//    » stp pTape, putch, [sp, #-16]!
+//    » stp getch, lr, [sp, #-16]!
+//    » ldp pTape, putch, [x0]
+//    » ldr getch, [x0, #16]
+    {
+      uint32_t* opcodes = buildData.opcodes.Append(4);
+      opcodes[0] = 0xa9bf53f3;
+      opcodes[1] = 0xa9bf7bf5;
+      opcodes[2] = 0xa9405013;
+      opcodes[3] = 0xf9400815;
+    }
+    bf_compile(program, buildData);
+//    » ldp getch, lr, [sp], #16
+//    » ldp pTape, putch, [sp], #16
+//    » ret
+    {
+      uint32_t* opcodes = buildData.opcodes.Append(3);
+      opcodes[0] = 0xa8c17bf5;
+      opcodes[1] = 0xa8c153f3;
+      opcodes[2] = 0xd65f03c0;
+    }
+    
+#if !RUN_BUILD_BENCHMARK
+    uint64_t endParse = GetMicroTime();
+    printf("Parse time: %lluus\n", endParse - startParse);
+    
+    uint64_t startBuild = GetMicroTime();
+#endif
+    void (*function)(bf_state_t*) = (void (*)(bf_state_t*)) Javelin::SimpleJitMemoryManager::GetInstance().Allocate(buildData.opcodes.GetNumberOfBytes());
+    memcpy((void*) function, buildData.opcodes.begin(), buildData.opcodes.GetNumberOfBytes());
+    Javelin::SimpleJitMemoryManager::GetInstance().EndWrite((void*) function);
+#if !RUN_BUILD_BENCHMARK
+    uint64_t endBuild = GetMicroTime();
+    printf("Build time: %lluus\n", endBuild - startBuild);
+    
+    bf_state_t state;
+    state.tape = &tape[0] - 2048;
+    state.get_ch = bf_getchar;
+    state.put_ch = bf_putchar;
+    function(&state);
+#endif
+    
+    Javelin::SimpleJitMemoryManager::GetInstance().Release((void*) function);
+  }
+}
+
+#endif
+
+int main(int argc, char** argv)
+{
+#if RUN_BUILD_BENCHMARK
+  for(int i = 0; i < 10; ++i)
+#endif
+  {
+    uint64_t start = GetMicroTime();
+    if(argc >= 2) {
+      long sz;
+      char* program;
+
+//      FILE* f = fopen(argv[1], "r");
+//      if(!f) {
+//        fprintf(stderr, "Cannot open %s\n", argv[1]);
+//        return 1;
+//      }
+
+      char filename[256];
+      strcpy(filename, argv[0]);
+      char *name = strrchr(filename, '/');
+      *name = 0;
+      name = strrchr(filename, '/');
+      *name = 0;
+      strcat(filename, "/Resources/");
+      name = strrchr(filename, '/');
+      strcpy(name+1, argv[1]);
+      FILE* f = fopen(filename, "r");
+      if(!f) {
+        fprintf(stderr, "Cannot open %s\n", argv[1]);
+        return 1;
+      }
+      fseek(f, 0, SEEK_END);
+      sz = ftell(f);
+      program = (char*)malloc(sz + 1);
+      fseek(f, 0, SEEK_SET);
+      program[fread(program, 1, sz, f)] = 0;
+      fclose(f);
+      bf_run(program);
+      uint64_t end = GetMicroTime();
+      printf("Execution time: %lluus\n", end-start);
+    } else {
+      fprintf(stderr, "Usage: %s INFILE.bf\n", argv[0]);
+      return 1;
+    }
+  }
+  return 0;
+}
+

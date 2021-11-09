@@ -1,0 +1,344 @@
+#include "Javelin/Assembler/riscv/Assembler.h"
+#include <assert.h>
+#include <stdio.h>
+
+static void (*CreateRV32ITest())()
+{
+  Javelin::Assembler assembler;
+  
+  »   beq t0, t1, test
+  »   jal x5, test
+  »   add t1, t2, t3
+  »   sub a0, a1, a2
+  »   addi t1, t2, -123
+  »   srai t1, t2, 3
+  » test:
+    
+  »   jalr t1
+  »   jalr t1, -100
+  »   jalr t1, t2, -100
+  »   jalr t1, -100(t2)
+
+  »   lui x2, 0x87654
+    
+  »   lb x1, -100(t2)
+  »   lb x1, (t2)
+  »   sw x1, -100(t2)
+  »   sw x1, (t2)
+
+  »   not x4, x5
+    
+
+  for(int i = 0; i < 30; ++i)
+  {
+    » add regx{i}, regx{i+1}, regx{i+2}
+  }
+
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateCTest())()
+{
+  Javelin::Assembler assembler;
+  
+  »   c.addi a0, -5
+  »   c.jr x1
+  »   c.li a0, 0x12
+  »   c.slli a0, 4
+  »   c.beqz a1, 1f
+  » 1:
+    
+  return (void(*)()) assembler.Build();
+}
+
+static void DoLabelTest()
+{
+  Javelin::Assembler assembler;
+
+  » .macro localNumericTest
+  » 0:
+  »  j 0f
+  » 1:
+  »  j 1f
+  » 0:
+  »  j 1b
+  » 1:
+  » .endm
+  
+  »  ebreak
+  » 0:
+  »  addi a0, {1}
+  »  j 0f
+  » *main:
+  »  addi a0, {1}
+  »  localNumericTest
+  »  j 0b
+  » *0:
+  »  addi a0, {1}
+  »  localNumericTest
+  »  j *0f
+  » 0:
+  »  addi a0, {1}
+  »  j *0b
+  » {0}:
+  »  addi a0, {1}
+  »  localNumericTest
+  »  j {0}f
+  » localName:
+  »  addi a0, {1}
+  »  j {0}b
+  » *0:
+  »  addi a0, {1}
+  »  j localName
+  » {0}:
+  »  addi a0, {1}
+  »  ret
+
+  void *result = assembler.Build();
+  int (*mainEntry)(int) = (int(*)(int)) assembler.GetNamedLabelAddress("main");
+  int (*numericEntry)(int) = (int(*)(int)) assembler.GetNumericLabelAddress(0);
+  int (*expressionEntry)(int) = (int(*)(int)) assembler.GetExpressionLabelAddress(0);
+
+//  assert(mainEntry(100) == 108);
+//  assert(numericEntry(200) == 204);
+//  assert(expressionEntry(300) == 301);
+  printf("mainEntry: %p\n", mainEntry);
+  printf("numericEntry: %p\n", numericEntry);
+  printf("expressionEntry: %p\n", expressionEntry);
+
+  Javelin::SimpleJitMemoryManager::StaticInstanceRelease(result);
+}
+
+static void DoCompressedLabelTest()
+{
+  Javelin::Assembler assembler;
+
+  » .macro localNumericTest
+  » 0:
+  »  c.j 0f
+  » 1:
+  »  c.j 1f
+  » 0:
+  »  c.j 1b
+  » 1:
+  » .endm
+  
+  »  ebreak
+  » 0:
+  »  c.addi a0, {1}
+  »  c.j 0f
+  » *main:
+  »  addi a0, {1}
+  »  localNumericTest
+  »  c.j 0b
+  » *0:
+  »  c.addi a0, {1}
+  »  localNumericTest
+  »  c.j *0f
+  » 0:
+  »  c.addi a0, {1}
+  »  c.j *0b
+  » {0}:
+  »  c.addi a0, {1}
+  »  localNumericTest
+  »  c.j {0}f
+  » localName:
+  »  c.addi a0, {1}
+  »  c.j {0}b
+  » *0:
+  »  c.addi a0, {1}
+  »  c.j localName
+  » {0}:
+  »  c.addi a0, {1}
+  »  ret
+
+  void *result = assembler.Build();
+  int (*mainEntry)(int) = (int(*)(int)) assembler.GetNamedLabelAddress("main");
+  int (*numericEntry)(int) = (int(*)(int)) assembler.GetNumericLabelAddress(0);
+  int (*expressionEntry)(int) = (int(*)(int)) assembler.GetExpressionLabelAddress(0);
+
+//  assert(mainEntry(100) == 108);
+//  assert(numericEntry(200) == 204);
+//  assert(expressionEntry(300) == 301);
+  printf("mainEntry: %p\n", mainEntry);
+  printf("numericEntry: %p\n", numericEntry);
+  printf("expressionEntry: %p\n", expressionEntry);
+
+  Javelin::SimpleJitMemoryManager::StaticInstanceRelease(result);
+}
+
+static void (*CreateCsrTest())()
+{
+  Javelin::Assembler assembler;
+
+  » csrrwi t1, 0xc00, 1
+  
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateCountersTest())()
+{
+  Javelin::Assembler assembler;
+
+  » rdcycle t1
+  » rdcycleh t1
+  » rdinstret t1
+  » rdinstreth t1
+  » rdtime t1
+  » rdtimeh t1
+  
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateFTest())()
+{
+  Javelin::Assembler assembler;
+
+  » fadd.s f1, f2, f3
+  » fadd.s f1, f2, f3, rne
+  » fadd.s f1, f2, f3, rtz
+  » fadd.s f1, f2, f3, rdn
+  » fadd.s f1, f2, f3, rup
+  » fadd.s f1, f2, f3, rmm
+  » fadd.s f1, f2, f3, dyn
+  » fadd.d f1, f2, f3
+  » fsub.s f1, f2, f3
+
+  » fmin.s f1, f2, f3
+  » fmin.d f1, f2, f3
+  » fmin.q f1, f2, f3
+  » fmax.s f1, f2, f3
+  » fmax.d f1, f2, f3
+  » fmax.q f1, f2, f3
+
+  » feq.s t1, f1, f2
+  » feq.d t1, f1, f2
+  » flt.s t1, f1, f2
+  » flt.d t1, f1, f2
+  » fle.s t1, f1, f2
+  » fle.d t1, f1, f2
+
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateDynamicOpcodeTest(int value))()
+{
+  Javelin::Assembler assembler;
+
+  »   j 2f
+  » 1:
+  »   addi a0, {value}
+  »   ret
+  » 2:
+  »   j 1b
+  
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateStaticOpcodeTest())()
+{
+  Javelin::Assembler assembler;
+
+  »   j 2f
+  » 1:
+  »   addi a0, 10
+  »   ret
+  » 2:
+  »   j 1b
+  
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateXLenTest())()
+{
+  Javelin::Assembler assembler;
+  
+  »   li a1, 4
+  »   li a0, 0
+  »   slli a1, 31
+  »   beqz a1, 1f
+  »   li a0, 1
+  »   slli a1, 31
+  »   beqz a1, 1f
+  »   li a0, 2
+  » 1:
+  »   ret
+
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateLargeNumberTest())()
+{
+  Javelin::Assembler assembler;
+  
+  »   li a0, 0x678
+  »   lui a0, 0x12345
+  »   slli a0, 32
+  »   srli a0, 16
+  »   ret
+  
+  return (void(*)()) assembler.Build();
+}
+
+static void (*CreateAutoCTest())()
+{
+  Javelin::Assembler assembler;
+  
+  // if (v % 2) v += 10;
+  // else v += 20;
+  
+  »   andi a1, a0, 1
+  »   addi a0, a0, 10
+  »   bnez a1, 1f
+  »   addi a0, 10
+  » 1:
+  »   ret
+  
+  return (void(*)()) assembler.Build();
+}
+
+int main()
+{
+  void (*rv32ITest)() = CreateRV32ITest();
+  printf("rv32ITest: %p\n", rv32ITest);
+
+  void (*cTest)() = CreateCTest();
+  printf("cTest: %p\n", cTest);
+
+  void (*csrTest)() = CreateCsrTest();
+  printf("csrTest: %p\n", csrTest);
+
+  void (*countersTest)() = CreateCountersTest();
+  printf("countersTest: %p\n", countersTest);
+
+  void (*fTest)() = CreateFTest();
+  printf("fTest: %p\n", fTest);
+
+  void (*dynamicOpcodeTest)() = CreateDynamicOpcodeTest(10);
+  printf("dynamicOpcodeTest: %p\n", dynamicOpcodeTest);
+
+  void (*dynamicOpcodeTest2)() = CreateDynamicOpcodeTest(1000);
+  printf("dynamicOpcodeTest2: %p\n", dynamicOpcodeTest2);
+
+  void (*staticOpcodeTest)() = CreateStaticOpcodeTest();
+  printf("staticOpcodeTest: %p\n", staticOpcodeTest);
+
+  void (*xlenTest)() = CreateXLenTest();
+  printf("xlenTest: %p\n", xlenTest);
+  
+  void (*largeNumberTest)() = CreateLargeNumberTest();
+  printf("largeNumberTest: %p\n", largeNumberTest);
+  
+  void (*autoCTest1)() = CreateAutoCTest();
+  printf("autoCTest1: %p\n", autoCTest1);
+    
+  Javelin::Assembler::SetMisa(0x80000000);
+  
+  void (*autoCTest2)() = CreateAutoCTest();
+  printf("autoCTest2: %p\n", autoCTest2);
+    
+  DoLabelTest();
+  DoCompressedLabelTest();
+
+  return 0;
+}

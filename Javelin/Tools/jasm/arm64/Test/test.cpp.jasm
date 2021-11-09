@@ -1,0 +1,56 @@
+#include "Javelin/Assembler/arm64/Assembler.h"
+#include <stdio.h>
+
+#if 0
+class Modifier
+{
+public:
+  virtual ~Modifier() { }
+  virtual int Calculate(int x) const = 0;
+};
+
+static Modifier* CreateFilter(int i, int j)
+{
+  Javelin::Assembler assembler;
+
+  void (*DeletingDestructor)(void*) = [](void *v) { Javelin::SimpleJitMemoryManager::GetInstance().Release(v); };
+
+  » object:
+  »  .quad vtbl
+  » vtbl:
+  »  .quad destructor, {DeletingDestructor}, getValue
+  » getValue:
+  »  cmp x1, #{i}
+  »  ccmp x1, #{j}, #4, ne
+  »  cset x0, eq
+  » destructor:
+  »  ret
+
+  return (Modifier*) assembler.Build();
+}
+
+int main()
+{
+  Modifier *modifier = CreateFilter(15, 21);
+  for(int i = 0; i < 256; ++i)
+  {
+    printf("%d -> %d\n", i, modifier->Calculate(i));
+  }
+  delete modifier;
+
+  return 0;
+}
+
+#else
+
+int main() {
+  Javelin::Assembler assembler;
+  for(int i = 0; i < 16; ++i) {
+    » lsl w0, w1, #{i}
+  }
+  » ret
+  void (*func)() = (void(*)()) assembler.Build();
+  func();
+}
+
+#endif

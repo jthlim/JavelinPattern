@@ -14,7 +14,7 @@ TAG(Literal24)
 TAG(Literal28)
 TAG(Literal32)
 /**
- * LiteralBlock contains var-length encoded length, followed by
+ * LiteralBlock contains 2-byte length, followed by
  * literal bytes to copy.
  **/
 TAG(LiteralBlock)
