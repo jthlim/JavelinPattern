@@ -209,11 +209,11 @@ AlternateActionCondition::Result Rel8AlternateActionCondition::IsValid(ActionCon
 	case JumpType::Forward:
 	case JumpType::Backward:
 	case JumpType::BackwardOrForward:
-		return IsValidForJumpType(context, labelOperand.jumpType);
+		return IsValidForJumpType(context);
 	}
 }
 
-AlternateActionCondition::Result Rel8AlternateActionCondition::IsValidForJumpType(ActionContext &context, JumpType jumpType) const
+AlternateActionCondition::Result Rel8AlternateActionCondition::IsValidForJumpType(ActionContext &context) const
 {
 	if(context.forwards)
 	{
@@ -424,11 +424,11 @@ AlternateActionCondition::Result Rel32AlternateActionCondition::IsValid(ActionCo
 	case JumpType::Forward:
 	case JumpType::Backward:
 	case JumpType::BackwardOrForward:
-		return IsValidForJumpType(context, labelOperand.jumpType);
+		return IsValidForJumpType(context);
 	}
 }
 
-AlternateActionCondition::Result Rel32AlternateActionCondition::IsValidForJumpType(ActionContext &context, JumpType jumpType) const
+AlternateActionCondition::Result Rel32AlternateActionCondition::IsValidForJumpType(ActionContext &context) const
 {
 	if(context.forwards)
 	{

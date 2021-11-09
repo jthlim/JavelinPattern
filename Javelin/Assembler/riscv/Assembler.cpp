@@ -1145,7 +1145,6 @@ uint8_t* SegmentAssembler::GenerateByteCode(uint8_t *p)
                 int bitShift = *s++;
                 uint32_t jumpOffset = *s++;
 				uint32_t currentOffset = forwardLabelReferences[index+blockData->forwardLabelReferenceOffset];
-				assert(currentOffset != 0);
 				uint32_t target = firstPassLabelOffsets.GetFirstLabelOffset(labelId);
 				int32_t delta = int32_t(target - currentOffset);
 				if((delta >> bitShift) != 0) s += jumpOffset;

@@ -69,15 +69,17 @@ namespace Javelin::Assembler::riscv
     class DeltaAlternateActionCondition : public Common::AlternateActionCondition
     {
     public:
+        DeltaAlternateActionCondition(int bitWidth, const LabelOperand &aLabelOperand);
+                
         virtual Result IsValid(ActionContext &context, const Action *action) const final;
         virtual bool Equals(const AlternateActionCondition *other) const;
+        
+        bool ShouldProcessIsValidAtEndOfAlternate() const { return false; }
 
-        virtual std::string GetDescription() const = 0;
+        virtual std::string GetDescription() const;
         virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context, const Action &action) const final;
 
     protected:
-        DeltaAlternateActionCondition(int bitWidth, const LabelOperand &aLabelOperand);
-                
         // This is the actual bit range supported.
         // e.g. if the delta supports ±1kb, this requires 11 bits, and bitWidth would be 11,
         // even if the lowest bit (bit 0) isn't stored.
@@ -85,7 +87,8 @@ namespace Javelin::Assembler::riscv
         
         LabelOperand labelOperand;
         
-        Result IsValidForJumpType(ActionContext &context, JumpType jumpType) const;
+    private:
+        Result IsValidForJumpType(ActionContext &context) const;
         Result IsValid(const ActionOffset &anchorOffset, const ActionOffset &destinationOffset) const;
     };
 

@@ -149,29 +149,34 @@ std::vector<uint8_t>& Action::GetLiteralData()
     throw AssemblerException("Invalid GetLiteralData() call");
 }
 
+void Action::UpdateActionOffset(bool forwards, ActionOffset &offset) const
+{
+    ssize_t minimumLength = GetMinimumLength();
+    ssize_t maximumLength = GetMaximumLength();
+    if(!forwards)
+    {
+        minimumLength = -minimumLength;
+        maximumLength = -maximumLength;
+    }
+    if(minimumLength != maximumLength)
+    {
+        offset.blockIndex++;
+        offset.offsetIntoBlock = 0;
+        offset.alignment = 0;
+    }
+    else
+    {
+        offset.offsetIntoBlock += minimumLength;
+    }
+    offset.totalMinimumOffset += minimumLength;
+    offset.totalMaximumOffset += maximumLength;
+}
+
 // Returns true if any changes have occurred.
 bool Action::ResolveRelativeAddresses(ActionContext &context)
 {
 	actionOffset = context.offset;
-	ssize_t minimumLength = GetMinimumLength();
-	ssize_t maximumLength = GetMaximumLength();
-	if(!context.forwards)
-	{
-		minimumLength = -minimumLength;
-		maximumLength = -maximumLength;
-	}
-	if(minimumLength != maximumLength)
-	{
-		context.offset.blockIndex++;
-		context.offset.offsetIntoBlock = 0;
-		context.offset.alignment = 0;
-	}
-	else
-	{
-		context.offset.offsetIntoBlock += minimumLength;
-	}
-	context.offset.totalMinimumOffset += minimumLength;
-	context.offset.totalMaximumOffset += maximumLength;
+    UpdateActionOffset(context.forwards, context.offset);
 	return false;
 }
 
@@ -542,14 +547,17 @@ bool AlternateAction::ResolveRelativeAddresses(ActionContext &context)
 		Alternate &alternate = alternateList[i];
 		
 		context.offset = offset;
-		if(context.forwards)
+        
+        bool resolveBeforeIsValid = alternate.condition->ShouldProcessIsValidAtEndOfAlternate() == context.forwards;
+
+		if(resolveBeforeIsValid)
 		{
 			if(alternate.action->ResolveRelativeAddresses(context)) changed = true;
 		}
 
 		AlternateActionCondition::Result result = alternate.condition->IsValid(context, alternate.action);
 		
-		if(!context.forwards)
+		if(!resolveBeforeIsValid)
 		{
 			if(alternate.action->ResolveRelativeAddresses(context)) changed = true;
 		}

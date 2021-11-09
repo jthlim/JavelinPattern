@@ -321,8 +321,8 @@ DECLARE_SINGLE_CANDIDATE_INSTRUCTION(RDTIMEH, (MatchRegX|MatchOp0), Zicsr, Exten
 // M extension
 DECLARE_SINGLE_CANDIDATE_INSTRUCTION(MUL, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1, MatchComma, MatchRegX|MatchOp2), R, ExtensionBitmask::M, 0x02000033);
 DECLARE_SINGLE_CANDIDATE_INSTRUCTION(MULH, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1, MatchComma, MatchRegX|MatchOp2), R, ExtensionBitmask::M, 0x02001033);
-DECLARE_SINGLE_CANDIDATE_INSTRUCTION(MULSU, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1, MatchComma, MatchRegX|MatchOp2), R, ExtensionBitmask::M, 0x02002033);
-DECLARE_SINGLE_CANDIDATE_INSTRUCTION(MULU, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1, MatchComma, MatchRegX|MatchOp2), R, ExtensionBitmask::M, 0x02003033);
+DECLARE_SINGLE_CANDIDATE_INSTRUCTION(MULHSU, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1, MatchComma, MatchRegX|MatchOp2), R, ExtensionBitmask::M, 0x02002033);
+DECLARE_SINGLE_CANDIDATE_INSTRUCTION(MULHU, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1, MatchComma, MatchRegX|MatchOp2), R, ExtensionBitmask::M, 0x02003033);
 DECLARE_SINGLE_CANDIDATE_INSTRUCTION(DIV, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1, MatchComma, MatchRegX|MatchOp2), R, ExtensionBitmask::M, 0x02004033);
 DECLARE_SINGLE_CANDIDATE_INSTRUCTION(DIVU, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1, MatchComma, MatchRegX|MatchOp2), R, ExtensionBitmask::M, 0x02005033);
 DECLARE_SINGLE_CANDIDATE_INSTRUCTION(REM, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1, MatchComma, MatchRegX|MatchOp2), R, ExtensionBitmask::M, 0x02006033);
@@ -487,8 +487,8 @@ InstructionMap::InstructionMap()
     // M extension
     (*this)["mul"] = &MUL;
     (*this)["mulh"] = &MULH;
-    (*this)["mulsu"] = &MULSU;
-    (*this)["mulu"] = &MULU;
+    (*this)["mulhsu"] = &MULHSU;
+    (*this)["mulhu"] = &MULHU;
     (*this)["div"] = &DIV;
     (*this)["divu"] = &DIVU;
     (*this)["rem"] = &REM;

@@ -107,7 +107,7 @@ namespace Javelin::Assembler::x64
 		Rel8AlternateActionCondition(const LabelOperand &aLabelOperand);
 		
 		LabelOperand labelOperand;
-		Result IsValidForJumpType(ActionContext &context, JumpType jumpType) const;
+		Result IsValidForJumpType(ActionContext &context) const;
 		
 		static Result IsValid(const ActionOffset &anchorOffset, const ActionOffset &destinationOffset);
 	};
@@ -126,7 +126,7 @@ namespace Javelin::Assembler::x64
 		Rel32AlternateActionCondition(const LabelOperand &aLabelOperand);
 		
 		LabelOperand labelOperand;
-		Result IsValidForJumpType(ActionContext &context, JumpType jumpType) const;
+		Result IsValidForJumpType(ActionContext &context) const;
 		
 		static Result IsValid(const ActionOffset &anchorOffset, const ActionOffset &destinationOffset);
 	};

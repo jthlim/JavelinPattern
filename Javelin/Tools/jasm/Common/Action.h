@@ -156,6 +156,10 @@ namespace Javelin::Assembler::Common
 		
 		virtual Result IsValid(ActionContext &context, const Action *action) const = 0;
 		virtual std::string GetDescription() const = 0;
+        
+        // Whether IsValid should be called at the end of the instruction sequence.
+        // If false, IsValid will be called before advancing the alternate.
+        virtual bool ShouldProcessIsValidAtEndOfAlternate() const { return true; }
 		
 		virtual void WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context, const Action &action) const = 0;
 		virtual void Release() const { delete this; }
@@ -283,7 +287,9 @@ namespace Javelin::Assembler::Common
 	private:
 		Action(const Action&) = delete;
 		void operator=(const Action&) = delete;
-	};
+
+        void UpdateActionOffset(bool forwards, ActionOffset &offset) const;
+    };
 
 	class EmptyAction : public Action
 	{

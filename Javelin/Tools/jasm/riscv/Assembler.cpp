@@ -25,8 +25,6 @@ static const int appendAssemblerReferenceSize = 16;
 
 //============================================================================
 
-
-
 Assembler::Assembler(bool aUseCompressedInstructions)
 : useCompressedInstructions(aUseCompressedInstructions)
 {
@@ -305,6 +303,24 @@ void Assembler::ParseIf(ListAction& listAction, Tokenizer &tokenizer, const std:
 	}
 }
 
+class DeltaNameMap : public std::unordered_map<std::string, int> {
+public:
+    static const DeltaNameMap instance;
+    
+private:
+    DeltaNameMap()
+    {
+        for (int i = 1; i < 32; ++i)
+        {
+            char buffer[16];
+            sprintf(buffer, "delta%d", i);
+            (*this)[buffer] = i;
+        }
+    }
+};
+
+const DeltaNameMap DeltaNameMap::instance;
+
 const AlternateActionCondition *Assembler::ParseCondition(Tokenizer &tokenizer)
 {
 	Token token = tokenizer.PeekToken();
@@ -319,17 +335,18 @@ const AlternateActionCondition *Assembler::ParseCondition(Tokenizer &tokenizer)
 		int expressionIndex = AddExpression(token.sValue, 64, tokenizer.GetCurrentLineNumber(), tokenizer.GetCurrentFileIndex());
 		return new SimmAlternateActionCondition(expressionIndex, 12);
 	}
-//	else if(token.sValue == "bdelta")
-//	{
-//		tokenizer.NextToken();
-//		token = tokenizer.GetToken();
-//		if(token.type != Token::Type::Expression)
-//		{
-//			throw AssemblerException("Unexpected token: %s (Expected expression for bdelta condition)", token.GetDescription().c_str());
-//		}
-//		int expressionIndex = AddExpression(token.sValue, 64, tokenizer.GetCurrentLineNumber(), tokenizer.GetCurrentFileIndex());
-//		return new BDeltaAlternateActionCondition(expressionIndex);
-//	}
+    else if (const auto it = DeltaNameMap::instance.find(token.sValue); it != DeltaNameMap::instance.end())
+    {
+        tokenizer.NextToken();
+        
+        AutoDeleteVector temporaryOperands;
+        Operand *target = ParseOperandPrimary(tokenizer, temporaryOperands);
+        if (target->type != Operand::Type::Label)
+        {
+            throw AssemblerException("delta conditional requires a label target");
+        }
+        return new DeltaAlternateActionCondition(it->second, *(LabelOperand*) target);
+    }
 	else if(token.type == Token::Type::Expression)
 	{
 		tokenizer.NextToken();
@@ -1135,9 +1152,8 @@ Next:
 			}
 		}
 
-		// Block to scope labelOperand.
-		{
 		ParseNamedLabel:
+        {
 			DeleteWrapper<LabelOperand> *labelOperand = new DeleteWrapper<LabelOperand>();
 			temporaryOperands.push_back(labelOperand);
 			labelOperand->global = globalLabel;

@@ -6,6 +6,8 @@ static void (*CreateRV32ITest())()
 {
   Javelin::Assembler assembler;
   
+  »   slli a1, a2, {3}
+  
   »   beq t0, t1, test
   »   jal x5, test
   »   add t1, t2, t3
@@ -221,6 +223,28 @@ static void (*CreateFTest())()
   return (void(*)()) assembler.Build();
 }
 
+static void (*CreateMTest())()
+{
+  Javelin::Assembler assembler;
+
+  » mul a0, a1, a2
+  » mulh a0, a1, a2
+  » mulhsu a0, a1, a2
+  » mulhu a0, a1, a2
+  » div a0, a1, a2
+  » divu a0, a1, a2
+  » rem a0, a1, a2
+  » remu a0, a1, a2
+  
+  » mulw a0, a1, a2
+  » divw a0, a1, a2
+  » divuw a0, a1, a2
+  » remw a0, a1, a2
+  » remuw a0, a1, a2
+  
+  return (void(*)()) assembler.Build();
+}
+
 static void (*CreateDynamicOpcodeTest(int value))()
 {
   Javelin::Assembler assembler;
@@ -297,8 +321,35 @@ static void (*CreateAutoCTest())()
   return (void(*)()) assembler.Build();
 }
 
+static void (*CreateDeltaTest())()
+{
+  Javelin::Assembler assembler;
+  
+  » .if delta2 1f
+  »  addi a0, 2
+  » .endif
+  »  c.nop
+  » 1:
+  » .if delta3 1f
+  »  addi a0, 3
+  » .endif
+  »  c.nop
+  » 1:
+  » .if delta4 1f
+  »  addi a0, 4
+  » .endif
+  »  c.nop
+  » 1:
+
+  return (void(*)()) assembler.Build();
+}
+
+
 int main()
 {
+  void (*deltaTest)() = CreateDeltaTest();
+  printf("deltaTest: %p\n", deltaTest);
+  
   void (*rv32ITest)() = CreateRV32ITest();
   printf("rv32ITest: %p\n", rv32ITest);
 
@@ -314,6 +365,9 @@ int main()
   void (*fTest)() = CreateFTest();
   printf("fTest: %p\n", fTest);
 
+  void (*mTest)() = CreateMTest();
+  printf("mTest: %p\n", mTest);
+  
   void (*dynamicOpcodeTest)() = CreateDynamicOpcodeTest(10);
   printf("dynamicOpcodeTest: %p\n", dynamicOpcodeTest);
 
@@ -328,7 +382,7 @@ int main()
   
   void (*largeNumberTest)() = CreateLargeNumberTest();
   printf("largeNumberTest: %p\n", largeNumberTest);
-  
+
   void (*autoCTest1)() = CreateAutoCTest();
   printf("autoCTest1: %p\n", autoCTest1);
     

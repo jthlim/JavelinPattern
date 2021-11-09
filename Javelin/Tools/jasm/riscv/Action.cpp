@@ -81,7 +81,27 @@ bool UimmAlternateActionCondition::Equals(const AlternateActionCondition *other)
 DeltaAlternateActionCondition::DeltaAlternateActionCondition(int aBitWidth, const LabelOperand &aLabelOperand)
 : bitWidth(aBitWidth), labelOperand(aLabelOperand)
 {
-    
+}
+
+std::string DeltaAlternateActionCondition::GetDescription() const
+{
+    char buffer[24];
+    if(labelOperand.IsExpression())
+    {
+        sprintf(buffer, "Delta%d{*{%d}%s}", bitWidth, labelOperand.expressionIndex, labelOperand.jumpType.ToString());
+        return buffer;
+    }
+    switch(labelOperand.jumpType)
+    {
+    case JumpType::Name:
+        sprintf(buffer, "Delta%d{", bitWidth);
+        return buffer + labelOperand.labelName + "}";
+    case JumpType::Forward:
+    case JumpType::Backward:
+    case JumpType::BackwardOrForward:
+        sprintf(buffer, "Delta%d{%" PRId64 "%s}", bitWidth, labelOperand.labelValue, labelOperand.jumpType.ToString());
+        return buffer;
+    }
 }
 
 bool DeltaAlternateActionCondition::Equals(const AlternateActionCondition *other) const
@@ -96,7 +116,6 @@ bool DeltaAlternateActionCondition::Equals(const AlternateActionCondition *other
 
 AlternateActionCondition::Result DeltaAlternateActionCondition::IsValid(ActionContext &context, const Action *action) const
 {
-    // context contains an offset at the end of the alternate.
     switch(labelOperand.jumpType)
     {
     case JumpType::Name:
@@ -108,11 +127,11 @@ AlternateActionCondition::Result DeltaAlternateActionCondition::IsValid(ActionCo
     case JumpType::Forward:
     case JumpType::Backward:
     case JumpType::BackwardOrForward:
-        return IsValidForJumpType(context, labelOperand.jumpType);
+        return IsValidForJumpType(context);
     }
 }
 
-AlternateActionCondition::Result DeltaAlternateActionCondition::IsValidForJumpType(ActionContext &context, JumpType jumpType) const
+AlternateActionCondition::Result DeltaAlternateActionCondition::IsValidForJumpType(ActionContext &context) const
 {
     if(context.forwards)
     {
