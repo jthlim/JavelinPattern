@@ -793,7 +793,7 @@ void Assembler::UpdateExpressionList()
 
 void Assembler::Write(FILE *f, int startingLine, int *expectedFileIndex, const std::vector<std::string> &filenameList) const
 {
-    static const int appendAssemblerReferenceSize = 12;
+    const int appendAssemblerReferenceSize = 12;
     
 	if(!rootListAction.HasData()) return;
 
@@ -899,8 +899,7 @@ void Assembler::Write(FILE *f, int startingLine, int *expectedFileIndex, const s
 	if(startingLine != -1) fprintf(f, "#line %d\n", startingLine);
 	if(expressionOffset > 0)
 	{
-		const int appendAssemblyReferenceSize = 12;
-		uint32_t dataSize = ((expressionOffset + appendAssemblyReferenceSize) + 7) & -8;
+		uint32_t dataSize = ((expressionOffset + appendAssemblerReferenceSize) + 7) & -8;
 		
 		if(labelData)
 		{
@@ -954,8 +953,7 @@ void Assembler::Write(FILE *f, int startingLine, int *expectedFileIndex, const s
 	{
 		if(labelData)
 		{
-			const int appendAssemblyReferenceSize = 12;
-			uint32_t dataSize = (appendAssemblyReferenceSize + 7) & -8;
+			uint32_t dataSize = (appendAssemblerReferenceSize + 7) & -8;
 			fprintf(f,
 					"%s  %sAppendInstructionData(%u, jasmData, %u, %d);\n",
 					prefix,

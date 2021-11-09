@@ -82,33 +82,23 @@ static bool bf_isBalancedLoopWithSingleDecrement(const char *program)
 }
 
 
-» .define pTape x19
-» .define putch x20
-» .define getch x21
+» .define pTape s0
+» .define putch s2
+» .define getch s3
 
 static void UpdateOffset(Javelin::Assembler &assembler, int &activeOffset)
 {
-  if(activeOffset < 2048) {
-    int delta = 2048 - activeOffset;
-    » sub pTape, pTape, #{delta}
-    activeOffset = 2048;
-  } else if(activeOffset > 2048) {
-    int delta = activeOffset - 2048;
-    » add pTape, pTape, #{delta}
-    activeOffset = 2048;
-  }
+  if (activeOffset == 0) return;
+  
+  » addi pTape, {activeOffset}
+  activeOffset = 0;
 }
 
 static void UpdateOffsetBounds(Javelin::Assembler &assembler, int &activeOffset)
 {
-  if(activeOffset < 0) {
-    int delta = 2048 - activeOffset;
-    » sub pTape, pTape, #{delta}
-    activeOffset = 2048;
-  } else if(activeOffset >= 4096)  {
-    int delta = activeOffset - 2048;
-    » add pTape, pTape, #{delta}
-    activeOffset = 2048;
+  if (activeOffset < -1024 || activeOffset >= 1023) {
+    » addi pTape, {activeOffset}
+    activeOffset = 0;
   }
 }
 
@@ -117,7 +107,7 @@ static void bf_emitBalancedLoopWithSingleDecrement(Javelin::Assembler &assembler
   int n;
   int activeOffset = 0;
   int offset0Adjust = 0;
-  » ldrb w1, [pTape, #{baseActiveOffset}]
+  » lb a1, {baseActiveOffset}(pTape)
   for(;;) {
     switch(*program++) {
       case '<':
@@ -132,32 +122,36 @@ static void bf_emitBalancedLoopWithSingleDecrement(Javelin::Assembler &assembler
         for(n = 1; *program == '+'; ++n, ++program);
         if(activeOffset == 0) offset0Adjust += n;
         else if(IsPowerOf2(n)) {
-          » ldrsb w0, [pTape, #{baseActiveOffset+activeOffset}]
-          » add w0, w0, w1, lsl #{__builtin_ctz(n)}
-          » strb w0, [pTape, #{baseActiveOffset+activeOffset}]
+          » lb a0, {baseActiveOffset+activeOffset}(pTape)
+          » slli a2, a1, {__builtin_ctz(n)}
+          » add a0, a0, a2
+          » sb a0, {baseActiveOffset+activeOffset}(pTape)
         } else {
-          » ldrsb w0, [pTape, #{baseActiveOffset+activeOffset}]
-          » movz w2, #{n}
-          » madd w0, w1, w2, w0
-          » strb w0, [pTape, #{baseActiveOffset+activeOffset}]
+          » lb a0, {baseActiveOffset+activeOffset}(pTape)
+          » li a2, {n}
+          » mul a2, a1, a2
+          » add a0, a0, a2
+          » sb a0, {baseActiveOffset+activeOffset}(pTape)
         }
         break;
       case '-':
         for(n = 1; *program == '-'; ++n, ++program);
         if(activeOffset == 0) offset0Adjust += n;
         else if(IsPowerOf2(n)) {
-          » ldrsb w0, [pTape, #{baseActiveOffset+activeOffset}]
-          » sub w0, w0, w1, lsl #{__builtin_ctz(n)}
-          » strb w0, [pTape, #{baseActiveOffset+activeOffset}]
+          » lb a0, {baseActiveOffset+activeOffset}(pTape)
+          » slli a2, a1, {__builtin_ctz(n)}
+          » sub a0, a0, a2
+          » sb a0, {baseActiveOffset+activeOffset}(pTape)
         } else {
-          » ldrsb w0, [pTape, #{baseActiveOffset+activeOffset}]
-          » movz w2, #{n}
-          » msub w0, w1, w2, w0
-          » strb w0, [pTape, #{baseActiveOffset+activeOffset}]
+          » lb a0, {baseActiveOffset+activeOffset}(pTape)
+          » li a2, {n}
+          » mul a2, a1, a2
+          » sub a0, a0, a2
+          » sb a0, {baseActiveOffset+activeOffset}(pTape)
         }
         break;
       case ']':
-        » strb wzr, [pTape, #{baseActiveOffset}]
+        » sb zero, {baseActiveOffset+activeOffset}(pTape)
         return;
     }
   }
@@ -169,7 +163,7 @@ static void bf_compile(const char* program, Javelin::Assembler &assembler)
   int n;
   int nloops = 0;
   int labelIndex = 0;
-  int activeOffset = 2048;
+  int activeOffset = 0;
   int lastStore = -1;
   const char *start = program;
 
@@ -186,29 +180,29 @@ static void bf_compile(const char* program, Javelin::Assembler &assembler)
     case '+':
       for(n = 1; *program == '+'; ++n, ++program);
       UpdateOffsetBounds(assembler, activeOffset);
-      » ldrsb w0, [pTape, #{activeOffset}]
-      » add w0, w0, #{n}
-      » strb w0, [pTape, #{activeOffset}]
+      » lb a0, {activeOffset}(pTape)
+      » addi a0, {n}
+      » sb a0, {activeOffset}(pTape)
       lastStore = activeOffset;
       break;
     case '-':
       for(n = 1; *program == '-'; ++n, ++program);
       UpdateOffsetBounds(assembler, activeOffset);
-      » ldrsb w0, [pTape, #{activeOffset}]
-      » sub w0, w0, #{n}
-      » strb w0, [pTape, #{activeOffset}]
+      » lb a0, {activeOffset}(pTape)
+      » addi a0, {-n}
+      » sb a0, {activeOffset}(pTape)
       lastStore = activeOffset;
       break;
     case ',':
       UpdateOffsetBounds(assembler, activeOffset);
-      » blr getch
-      » strb w0, [pTape, #{activeOffset}]
+      » jalr getch
+      » sb a0, {activeOffset}(pTape)
       lastStore = activeOffset;
       break;
     case '.':
       UpdateOffsetBounds(assembler, activeOffset);
-      » ldrb w0, [pTape, #{activeOffset}]
-      » blr putch
+      » lb a0, {activeOffset}(pTape)
+      » jalr putch
       lastStore = -1;
       break;
     case '[':
@@ -217,7 +211,7 @@ static void bf_compile(const char* program, Javelin::Assembler &assembler)
       if(program[0] == '-' && program[1] == ']') {
         // Special case zero detection,
         UpdateOffsetBounds(assembler, activeOffset);
-        » strb wzr, [pTape, #{activeOffset}]
+        » sb zero, {activeOffset}(pTape)
         program += 2;
       } else if(bf_isBalancedLoopWithSingleDecrement(program)) {
         bf_emitBalancedLoopWithSingleDecrement(assembler, program, activeOffset);
@@ -227,10 +221,11 @@ static void bf_compile(const char* program, Javelin::Assembler &assembler)
         if(program-2 < start || program[-2] != '[') {
           if(activeOffset != lastStore) {
             UpdateOffsetBounds(assembler, activeOffset);
-            » ldrb w0, [pTape, #{activeOffset}]
+            » lb a0, {activeOffset}(pTape)
           }
           UpdateOffset(assembler, activeOffset);
-          » cbz w0, {labelIndex+1}f
+          » bnez a0, {labelIndex}f
+          » j {labelIndex+1}f
           »{labelIndex}:
           loops[nloops] = labelIndex|1;
         } else {
@@ -249,17 +244,20 @@ static void bf_compile(const char* program, Javelin::Assembler &assembler)
         int labelIndex = loops[--nloops];
         if(activeOffset != lastStore) {
           UpdateOffsetBounds(assembler, activeOffset);
-          » ldrb w0, [pTape, #{activeOffset}]
+          » lb a0, {activeOffset}(pTape)
         }
         UpdateOffset(assembler, activeOffset);
         if(labelIndex & 1)
         {
-          » cbnz w0, {labelIndex-1}b
+          » beqz a0, {labelIndex}f
+          » j {labelIndex-1}b
           »{labelIndex}:
         }
         else
         {
-          » cbnz w0, {labelIndex}b
+          »   beqz a0, 1f
+          »   j {labelIndex}b
+          » 1:
         }
       }
       break;
@@ -284,13 +282,20 @@ static void bf_run(const char* program)
 #if !RUN_BUILD_BENCHMARK
     uint64_t startParse = GetMicroTime();
 #endif
-    » stp pTape, putch, [sp, #-16]!
-    » stp getch, lr, [sp, #-16]!
-    » ldp pTape, putch, [x0]
-    » ldr getch, [x0, #16]
+    » addi sp, -32
+    » sd pTape, (sp)
+    » sd putch, 8(sp)
+    » sd getch, 16(sp)
+    » sd ra, 24(sp)
+    » ld pTape, (a0)
+    » ld putch, 8(a0)
+    » ld getch, 16(a0)
     bf_compile(program, assembler);
-    » ldp getch, lr, [sp], #16
-    » ldp pTape, putch, [sp], #16
+    » ld pTape, (sp)
+    » ld putch, 8(sp)
+    » ld getch, 16(sp)
+    » ld ra, 24(sp)
+    » addi sp, 32
     » ret
 
 #if !RUN_BUILD_BENCHMARK
@@ -305,7 +310,7 @@ static void bf_run(const char* program)
     printf("Build time: %lluus\n", endBuild - startBuild);
 
     bf_state_t state;
-    state.tape = &tape[0] - 2048;
+    state.tape = &tape[0];
     state.get_ch = bf_getchar;
     state.put_ch = bf_putchar;
     function(&state);
@@ -326,12 +331,7 @@ int main(int argc, char** argv)
       long sz;
       char* program;
       
-      char filename[256];
-      strcpy(filename, argv[0]);
-      char *name = strrchr(filename, '/');
-      strcpy(name+1, argv[1]);
-      
-      FILE* f = fopen(filename, "r");
+      FILE* f = fopen(argv[1], "r");
       if(!f) {
         fprintf(stderr, "Cannot open %s\n", argv[1]);
         return 1;

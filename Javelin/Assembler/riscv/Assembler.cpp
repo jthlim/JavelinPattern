@@ -1,6 +1,6 @@
 //============================================================================
 
-#if defined(__riscv)
+#if 1 // defined(__riscv)
 
 //============================================================================
 
@@ -177,7 +177,7 @@ void SegmentAssembler::Patch(uint8_t* p, RelEncoding encoding, intptr_t delta)
 
             rel += delta;
             assert((rel & 1) == 0);
-            assert(rel >> 11 == 0 || rel >> 11 == -1);
+            assert(rel >> 12 == 0 || rel >> 12 == -1);
 
             opcode.imm4_1 = rel >> 1;
             opcode.imm10_5 = rel >> 5;
@@ -214,7 +214,7 @@ void SegmentAssembler::Patch(uint8_t* p, RelEncoding encoding, intptr_t delta)
 
             rel += delta;
             assert((rel & 1) == 0);
-            assert(rel >> 19 == 0 || rel >> 19 == -1);
+            assert(rel >> 20 == 0 || rel >> 20 == -1);
             opcode.imm10_1 = rel >> 1;
             opcode.imm11 = rel >> 11;
             opcode.imm19_12 = rel >> 12;
@@ -265,7 +265,7 @@ void SegmentAssembler::Patch(uint8_t* p, RelEncoding encoding, intptr_t delta)
             rel += delta;
             
             assert((rel & 1) == 0);
-            assert(rel >> 7 == 0 || rel >> 7 == -1);
+            assert(rel >> 8 == 0 || rel >> 8 == -1);
 
             opcode.imm2_1 = rel >> 1;
             opcode.imm4_3 = rel >> 3;
@@ -312,7 +312,7 @@ void SegmentAssembler::Patch(uint8_t* p, RelEncoding encoding, intptr_t delta)
             rel += delta;
             
             assert((rel & 1) == 0);
-            assert(rel >> 10 == 0 || rel >> 10 == -1);
+            assert(rel >> 11 == 0 || rel >> 11 == -1);
 
             opcode.imm3_1 = rel >> 1;
             opcode.imm4 = rel >> 4;

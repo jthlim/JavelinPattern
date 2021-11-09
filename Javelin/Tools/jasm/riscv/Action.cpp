@@ -549,7 +549,7 @@ bool PatchLabelAction::Simplify(Common::ListAction *parent, size_t index)
 
             rel += delta;
             assert((rel & 1) == 0);
-            assert(BitUtility::IsValidSignedImmediate(rel, 12));
+            assert(BitUtility::IsValidSignedImmediate(rel, 13));
             opcode.imm4_1 = rel >> 1;
             opcode.imm10_5 = rel >> 5;
             opcode.imm11 = rel >> 11;
@@ -585,7 +585,7 @@ bool PatchLabelAction::Simplify(Common::ListAction *parent, size_t index)
 
             rel += delta;
             assert((rel & 1) == 0);
-            assert(BitUtility::IsValidSignedImmediate(rel, 20));
+            assert(BitUtility::IsValidSignedImmediate(rel, 21));
             opcode.imm10_1 = rel >> 1;
             opcode.imm11 = rel >> 11;
             opcode.imm19_12 = rel >> 12;
@@ -635,7 +635,7 @@ bool PatchLabelAction::Simplify(Common::ListAction *parent, size_t index)
             rel += delta;
             
             assert((rel & 1) == 0);
-            assert(BitUtility::IsValidSignedImmediate(rel, 8));
+            assert(BitUtility::IsValidSignedImmediate(rel, 9));
             
             opcode.imm2_1 = rel >> 1;
             opcode.imm4_3 = rel >> 3;
@@ -682,7 +682,7 @@ bool PatchLabelAction::Simplify(Common::ListAction *parent, size_t index)
             rel += delta;
             
             assert((rel & 1) == 0);
-            assert(BitUtility::IsValidSignedImmediate(rel, 11));
+            assert(BitUtility::IsValidSignedImmediate(rel, 12));
 
             opcode.imm3_1 = rel >> 1;
             opcode.imm4 = rel >> 4;
