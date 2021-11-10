@@ -46,7 +46,7 @@ namespace Javelin
 		void Reset()										  { buildData.Clear(); allLabelData = { }; }
         
         // Provides the size of the code once the segment has been built.
-        uint32_t codeSize = (uint32_t) -1;
+        uint32_t GetCodeSize() const                          { return codeSize; }
 
 	private:
 		// Any changes to this need to be reflected in:
@@ -96,7 +96,9 @@ namespace Javelin
 		uint8_t *programStart;
 		JitMemoryManager &memoryManager;
 
-		void ProcessLabelData(uint32_t labelData);
+        uint32_t codeSize = (uint32_t) -1;
+
+        void ProcessLabelData(uint32_t labelData);
 		
 		void ProcessByteCode();
 		uint32_t PrepareGenerateByteCode();

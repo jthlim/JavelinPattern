@@ -249,6 +249,12 @@ static void bf_compile(const char* program, Javelin::Assembler &assembler)
     case ']':
       if(nloops == 0) {
         bad_program("] without matching [");
+      } else if (program[-2] == ']') {
+          int labelIndex = loops[--nloops];
+          UpdateOffset(assembler, activeOffset);
+          if(labelIndex & 1) {
+            »{labelIndex}:
+          }
       } else {
         int labelIndex = loops[--nloops];
         if(activeOffset != lastStore) {
@@ -256,16 +262,14 @@ static void bf_compile(const char* program, Javelin::Assembler &assembler)
           » ldrb w0, [pTape, #{activeOffset}]
         }
         UpdateOffset(assembler, activeOffset);
-        if(labelIndex & 1)
-        {
+        if(labelIndex & 1) {
           » cbnz w0, {labelIndex-1}b
           »{labelIndex}:
-        }
-        else
-        {
+        } else {
           » cbnz w0, {labelIndex}b
         }
       }
+      lastStore = -1;
       break;
     case 0:
       if(nloops != 0) {
@@ -307,6 +311,7 @@ static void bf_run(const char* program)
 #if !RUN_BUILD_BENCHMARK
     uint64_t endBuild = GetMicroTime();
     printf("Build time: %lluus\n", endBuild - startBuild);
+    printf("Code size: %u\n", assembler.GetCodeSize());
 
     bf_state_t state;
     state.tape = &tape[0] - 2048;
@@ -612,13 +617,14 @@ static void bf_run(const char* program)
     
     uint64_t startBuild = GetMicroTime();
 #endif
-    void (*function)(bf_state_t*) = (void (*)(bf_state_t*)) Javelin::SimpleJitMemoryManager::GetInstance().Allocate(buildData.opcodes.GetNumberOfBytes());
+    void (*function)(bf_state_t*) = (void (*)(bf_state_t*)) Javelin::SimpleJitMemoryManager::GetInstance()->Allocate(buildData.opcodes.GetNumberOfBytes());
     memcpy((void*) function, buildData.opcodes.begin(), buildData.opcodes.GetNumberOfBytes());
-    Javelin::SimpleJitMemoryManager::GetInstance().EndWrite((void*) function);
+    Javelin::SimpleJitMemoryManager::GetInstance()->EndWrite((void*) function);
 #if !RUN_BUILD_BENCHMARK
     uint64_t endBuild = GetMicroTime();
     printf("Build time: %lluus\n", endBuild - startBuild);
-    
+    printf("Code size: %u\n", buildData.opcodes.GetNumberOfBytes());
+
     bf_state_t state;
     state.tape = &tape[0] - 2048;
     state.get_ch = bf_getchar;
@@ -626,7 +632,7 @@ static void bf_run(const char* program)
     function(&state);
 #endif
     
-    Javelin::SimpleJitMemoryManager::GetInstance().Release((void*) function);
+    Javelin::SimpleJitMemoryManager::GetInstance()->Release((void*) function);
   }
 }
 

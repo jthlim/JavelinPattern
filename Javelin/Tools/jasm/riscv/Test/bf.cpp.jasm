@@ -1,6 +1,6 @@
 // Adapted from http://corsix.github.io/dynasm-doc/tutorial.html
 
-#include "Javelin/Assembler/riscv/Assembler.h"
+#include "Javelin/Assembler/Assembler.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,71 +47,228 @@ static uint64_t GetMicroTime()
 »   1:
 »   .endif
 » .endm
-»
+
+static bool IsPowerOf2(unsigned int i)  { return (i & (i-1) ) == 0; }
+
+static bool bf_isBalancedLoopWithSingleDecrement(const char *program)
+{
+  int n;
+  int activeOffset = 0;
+  int offset0Adjust = 0;
+  for(;;) {
+    switch(*program++) {
+      case '<':
+        for(n = 1; *program == '<'; ++n, ++program);
+        activeOffset -= n;
+        break;
+      case '>':
+        for(n = 1; *program == '>'; ++n, ++program);
+        activeOffset += n;
+        break;
+      case '+':
+        for(n = 1; *program == '+'; ++n, ++program);
+        if(activeOffset == 0) offset0Adjust += n;
+        break;
+      case '-':
+        for(n = 1; *program == '-'; ++n, ++program);
+        if(activeOffset == 0) offset0Adjust -= n;
+        break;
+      case ',':
+        return false;
+      case '.':
+        return false;
+      case '[':
+        return false;
+      case ']':
+        return activeOffset == 0 && offset0Adjust == -1;
+      case 0:
+        program = "<EOF>";
+        bad_program("[ without matching ]");
+    }
+  }
+}
+
+
+static void UpdateOffset(Javelin::Assembler &assembler, int &activeOffset)
+{
+  if (activeOffset == 0) return;
+    
+  » addi pTape, {activeOffset}
+  activeOffset = 0;
+}
+
+static void UpdateOffsetBounds(Javelin::Assembler &assembler, int &activeOffset)
+{
+  if(activeOffset < -1024 || activeOffset >= 1024) {
+    » addi pTape, {activeOffset}
+    activeOffset = 0;
+  }
+}
+
+static void bf_emitBalancedLoopWithSingleDecrement(Javelin::Assembler &assembler, const char *&program, int baseActiveOffset)
+{
+  int n;
+  int activeOffset = 0;
+  int offset0Adjust = 0;
+  » lb a1, {baseActiveOffset}(pTape)
+  for(;;) {
+    switch(*program++) {
+      case '<':
+        for(n = 1; *program == '<'; ++n, ++program);
+        activeOffset -= n;
+        break;
+      case '>':
+        for(n = 1; *program == '>'; ++n, ++program);
+        activeOffset += n;
+        break;
+      case '+':
+        for(n = 1; *program == '+'; ++n, ++program);
+        if(activeOffset == 0) {
+          offset0Adjust += n;
+        } else if(n == 1) {
+          » lb a0, {baseActiveOffset+activeOffset}(pTape)
+          » add a0, a0, a1
+          » sb a0, {baseActiveOffset+activeOffset}(pTape)
+        } else if(IsPowerOf2(n)) {
+          » lb a0, {baseActiveOffset+activeOffset}(pTape)
+          » slli a2, a1, {__builtin_ctz(n)}
+          » add a0, a0, a2
+          » sb a0, {baseActiveOffset+activeOffset}(pTape)
+        } else {
+          » lb a0, {baseActiveOffset+activeOffset}(pTape)
+          » li a2, {n}
+          » mul a2, a2, a1
+          » add a0, a0, a2
+          » sb a0, {baseActiveOffset+activeOffset}(pTape)
+        }
+        break;
+      case '-':
+        for(n = 1; *program == '-'; ++n, ++program);
+        if(activeOffset == 0) {
+          offset0Adjust += n;
+        } else if (n == 1) {
+          » lb a0, {baseActiveOffset+activeOffset}(pTape)
+          » sub a0, a0, a1
+          » sb a0, {baseActiveOffset+activeOffset}(pTape)
+        } else if(IsPowerOf2(n)) {
+          » lb a0, {baseActiveOffset+activeOffset}(pTape)
+          » slli a2, a1, {__builtin_ctz(n)}
+          » sub a0, a0, a2
+          » sb a0, {baseActiveOffset+activeOffset}(pTape)
+        } else {
+          » lb a0, {baseActiveOffset+activeOffset}(pTape)
+          » li a2, {n}
+          » mul a2, a2, a1
+          » sub a0, a0, a2
+          » sb a0, {baseActiveOffset+activeOffset}(pTape)
+        }
+        break;
+      case ']':
+        » sb zero, {baseActiveOffset}(pTape)
+        return;
+    }
+  }
+}
 
 static void bf_compile(const char* program, Javelin::Assembler &assembler)
 {
+  const int UNKNOWN_STORE = 0x80000000;
+  
   unsigned loops[MAX_NESTING];
   int n;
   int nloops = 0;
   int labelIndex = 0;
+  int activeOffset = 0;
+  int lastStore = UNKNOWN_STORE;
+  const char *start = program;
 
   for(;;) {
     switch(*program++) {
     case '<':
       for(n = 1; *program == '<'; ++n, ++program);
-      » addi pTape, {-n}
+      activeOffset -= n;
       break;
     case '>':
       for(n = 1; *program == '>'; ++n, ++program);
-      » addi pTape, {n}
+      activeOffset += n;
       break;
     case '+':
       for(n = 1; *program == '+'; ++n, ++program);
-      » lb a0, (pTape)
+      UpdateOffsetBounds(assembler, activeOffset);
+      » lb a0, {activeOffset}(pTape)
       » addi a0, {n}
-      » sb a0, (pTape)
+      » sb a0, {activeOffset}(pTape)
+      lastStore = activeOffset;
       break;
     case '-':
       for(n = 1; *program == '-'; ++n, ++program);
-      » lb a0, (pTape)
+      UpdateOffsetBounds(assembler, activeOffset);
+      » lb a0, {activeOffset}(pTape)
       » addi a0, {-n}
-      » sb a0, (pTape)
+      » sb a0, {activeOffset}(pTape)
+      lastStore = activeOffset;
       break;
     case ',':
+      UpdateOffsetBounds(assembler, activeOffset);
       » jalr getch
-      » sb a0, (pTape)
+      » sb a0, {activeOffset}(pTape)
+      lastStore = activeOffset;
       break;
     case '.':
-      » lb a0, (pTape)
+      UpdateOffsetBounds(assembler, activeOffset);
+      » lb a0, {activeOffset}(pTape)
       » jalr putch
+      lastStore = UNKNOWN_STORE;
       break;
     case '[':
       if(nloops == MAX_NESTING)
         bad_program("Nesting too deep");
       if(program[0] == '-' && program[1] == ']') {
         // Special case zero detection,
-        » sb zero, (pTape)
+        UpdateOffsetBounds(assembler, activeOffset);
+        » sb zero, {activeOffset}(pTape)
         program += 2;
+      } else if(bf_isBalancedLoopWithSingleDecrement(program)) {
+        bf_emitBalancedLoopWithSingleDecrement(assembler, program, activeOffset);
       } else {
-        » lb a0, (pTape)
-        » lbeqz a0, {labelIndex+1}f
-        »{labelIndex}:
+        // If the previuos symbol was also a while (*ptr)
+        // Then no updates to activeOffset or a comparison need to be made.
+        if(program-2 < start || program[-2] != '[') {
+          if(activeOffset != lastStore) {
+            UpdateOffsetBounds(assembler, activeOffset);
+            » lb a0, {activeOffset}(pTape)
+          }
+          UpdateOffset(assembler, activeOffset);
+          » lbeqz a0, {labelIndex+1}f
+          »{labelIndex}:
+        } else {
+          »{labelIndex}:
+        }
         
         loops[nloops] = labelIndex;
         ++nloops;
         labelIndex += 2;
       }
+      lastStore = UNKNOWN_STORE;
       break;
     case ']':
       if(nloops == 0) {
         bad_program("] without matching [");
+      } if (program[-2] == ']') {
+        UpdateOffset(assembler, activeOffset);
+        int labelIndex = loops[--nloops];
+        »{labelIndex+1}:
       } else {
         int labelIndex = loops[--nloops];
-        » lb a0, (pTape)
+        
+        if(activeOffset != lastStore) {
+          » lb a0, {activeOffset}(pTape)
+        }
+        UpdateOffset(assembler, activeOffset);
         » lbnez a0, {labelIndex}b
         »{labelIndex+1}:
       }
+      lastStore = UNKNOWN_STORE;
       break;
     case 0:
       if(nloops != 0) {
@@ -161,7 +318,7 @@ static void bf_run(const char* program)
 #if !RUN_BUILD_BENCHMARK
     uint64_t endBuild = GetMicroTime();
     printf("Build time: %lluus\n", endBuild - startBuild);
-    printf("Code size: %u\n", assembler.codeSize);
+    printf("Code size: %u\n", assembler.GetCodeSize());
 
     function(tape, putchar, getchar);
 #endif
@@ -202,4 +359,5 @@ int main(int argc, char** argv)
   }
   return 0;
 }
+
 

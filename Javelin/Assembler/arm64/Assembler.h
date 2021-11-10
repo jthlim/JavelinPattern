@@ -43,6 +43,9 @@ namespace Javelin
 		static bool IsValidBitmask32(uint64_t v)			  { return IsValidBitmask64(v | (v << 32)); }
 		static bool IsValidBitmask64(uint64_t v);
 		
+        // Provides the size of the code once the segment has been built.
+        uint32_t GetCodeSize() const                          { return codeSize; }
+
 	private:
 		// Any changes to this need to be reflected in:
 		//  - Assembler::arm64::Action::WriteExpressionOffset
@@ -88,6 +91,8 @@ namespace Javelin
 		
 		uint8_t *programStart;
 		JitMemoryManager &memoryManager;
+
+        uint32_t codeSize = (uint32_t) -1;
 
 		void ProcessLabelData(uint32_t labelData);
 		

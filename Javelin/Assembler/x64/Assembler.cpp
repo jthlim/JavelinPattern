@@ -321,7 +321,7 @@ void SegmentAssembler::ProcessByteCode()
 
 	// Shrink allocation
 	memoryManager.EndWrite(programStart);
-	uint32_t codeSize = uint32_t(programEnd - programStart);
+	codeSize = uint32_t(programEnd - programStart);
 	assert(codeSize <= maximumCodeSize);
 	memoryManager.Shrink(programStart, codeSize);
 }

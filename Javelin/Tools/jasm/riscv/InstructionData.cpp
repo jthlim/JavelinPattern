@@ -133,7 +133,16 @@ DECLARE_SINGLE_CANDIDATE_INSTRUCTION(SLT, (MatchRegX|MatchOp0, MatchComma, Match
 DECLARE_SINGLE_CANDIDATE_INSTRUCTION(SLTU, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1, MatchComma, MatchRegX|MatchOp2), R, ExtensionBitmask::RV32I, 0x00003033);
 DECLARE_SINGLE_CANDIDATE_INSTRUCTION(SRA, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1, MatchComma, MatchRegX|MatchOp2), R, ExtensionBitmask::RV32I, 0x40005033);
 DECLARE_SINGLE_CANDIDATE_INSTRUCTION(SRL, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1, MatchComma, MatchRegX|MatchOp2), R, ExtensionBitmask::RV32I, 0x00005033);
-DECLARE_SINGLE_CANDIDATE_INSTRUCTION(SUB, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1, MatchComma, MatchRegX|MatchOp2), R, ExtensionBitmask::RV32I, 0x40000033);
+
+constexpr EncodingVariant SUB_ENCODING_VARIANTS[] =
+{
+    DECLARE_CANDIDATE((MatchRegCX|MatchOp0, MatchComma, MatchRegCX|MatchOp1), CA, ExtensionBitmask::C, 0x8c01),
+    DECLARE_CANDIDATE((MatchRegX|MatchOp0|MatchOp1, MatchComma, MatchRegX|MatchOp2), R, ExtensionBitmask::RV32I, 0x40000033),
+    DECLARE_CANDIDATE((MatchRegCX|MatchOp0, MatchComma, MatchRepeatOp0, MatchComma, MatchRegCX|MatchOp1), CA, ExtensionBitmask::C, 0x8c01),
+    DECLARE_CANDIDATE((MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1, MatchComma, MatchRegX|MatchOp2), R, ExtensionBitmask::RV32I, 0x40000033),
+};
+DECLARE_INSTRUCTION(SUB);
+
 DECLARE_SINGLE_CANDIDATE_INSTRUCTION(XOR, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1, MatchComma, MatchRegX|MatchOp2), R, ExtensionBitmask::RV32I, 0x00004033);
 
 constexpr EncodingVariant ADDI_ENCODING_VARIANTS[] =
