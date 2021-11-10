@@ -251,13 +251,6 @@ AlternateActionCondition::Result Rel8AlternateActionCondition::IsValid(const Act
 
 void Rel8AlternateActionCondition::WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context, const Action &action) const
 {
-	if(!action.GetLastAction() || dynamic_cast<const PatchLabelAction*>(action.GetLastAction()) == nullptr)
-	{
-		throw AssemblerException("Internal error: Rel8AlternateAction unable to find PatchLabelAction");
-	}
-	
-	const LabelOperand& labelOperand = dynamic_cast<const PatchLabelAction*>(action.GetLastAction())->labelOperand;
-	
 	// Prefix with condition code
 	std::vector<uint8_t> conditionCode;
 	if(labelOperand.IsExpression())

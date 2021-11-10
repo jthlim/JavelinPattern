@@ -14,13 +14,6 @@
 
 unsigned char tape[TAPE_SIZE];
 
-typedef struct bf_state
-{
-  unsigned char* tape;
-  void (*put_ch)(unsigned char);
-  unsigned char (*get_ch)();
-} bf_state_t;
-
 static uint64_t GetMicroTime()
 {
   timeval tp;
@@ -31,131 +24,30 @@ static uint64_t GetMicroTime()
 
 #define bad_program(s) exit(fprintf(stderr, "bad program near %.16s: %s\n", program, s))
 
-static bool IsPowerOf2(unsigned int i)  { return (i & (i-1) ) == 0; }
-
-static void bf_putchar(unsigned char c)
-{
-  putchar((int)c);
-}
-
-static unsigned char bf_getchar()
-{
-  return (unsigned char) getchar();
-}
-
-static bool bf_isBalancedLoopWithSingleDecrement(const char *program)
-{
-  int n;
-  int activeOffset = 0;
-  int offset0Adjust = 0;
-  for(;;) {
-    switch(*program++) {
-      case '<':
-        for(n = 1; *program == '<'; ++n, ++program);
-        activeOffset -= n;
-        break;
-      case '>':
-        for(n = 1; *program == '>'; ++n, ++program);
-        activeOffset += n;
-        break;
-      case '+':
-        for(n = 1; *program == '+'; ++n, ++program);
-        if(activeOffset == 0) offset0Adjust += n;
-        break;
-      case '-':
-        for(n = 1; *program == '-'; ++n, ++program);
-        if(activeOffset == 0) offset0Adjust -= n;
-        break;
-      case ',':
-        return false;
-      case '.':
-        return false;
-      case '[':
-        return false;
-      case ']':
-        return activeOffset == 0 && offset0Adjust == -1;
-      case 0:
-        program = "<EOF>";
-        bad_program("[ without matching ]");
-    }
-  }
-}
-
-
 » .define pTape s0
 » .define putch s2
 » .define getch s3
 
-static void UpdateOffset(Javelin::Assembler &assembler, int &activeOffset)
-{
-  if (activeOffset == 0) return;
-  
-  » addi pTape, {activeOffset}
-  activeOffset = 0;
-}
-
-static void UpdateOffsetBounds(Javelin::Assembler &assembler, int &activeOffset)
-{
-  if (activeOffset < -1024 || activeOffset >= 1023) {
-    » addi pTape, {activeOffset}
-    activeOffset = 0;
-  }
-}
-
-static void bf_emitBalancedLoopWithSingleDecrement(Javelin::Assembler &assembler, const char *&program, int baseActiveOffset)
-{
-  int n;
-  int activeOffset = 0;
-  int offset0Adjust = 0;
-  » lb a1, {baseActiveOffset}(pTape)
-  for(;;) {
-    switch(*program++) {
-      case '<':
-        for(n = 1; *program == '<'; ++n, ++program);
-        activeOffset -= n;
-        break;
-      case '>':
-        for(n = 1; *program == '>'; ++n, ++program);
-        activeOffset += n;
-        break;
-      case '+':
-        for(n = 1; *program == '+'; ++n, ++program);
-        if(activeOffset == 0) offset0Adjust += n;
-        else if(IsPowerOf2(n)) {
-          » lb a0, {baseActiveOffset+activeOffset}(pTape)
-          » slli a2, a1, {__builtin_ctz(n)}
-          » add a0, a0, a2
-          » sb a0, {baseActiveOffset+activeOffset}(pTape)
-        } else {
-          » lb a0, {baseActiveOffset+activeOffset}(pTape)
-          » li a2, {n}
-          » mul a2, a1, a2
-          » add a0, a0, a2
-          » sb a0, {baseActiveOffset+activeOffset}(pTape)
-        }
-        break;
-      case '-':
-        for(n = 1; *program == '-'; ++n, ++program);
-        if(activeOffset == 0) offset0Adjust += n;
-        else if(IsPowerOf2(n)) {
-          » lb a0, {baseActiveOffset+activeOffset}(pTape)
-          » slli a2, a1, {__builtin_ctz(n)}
-          » sub a0, a0, a2
-          » sb a0, {baseActiveOffset+activeOffset}(pTape)
-        } else {
-          » lb a0, {baseActiveOffset+activeOffset}(pTape)
-          » li a2, {n}
-          » mul a2, a1, a2
-          » sub a0, a0, a2
-          » sb a0, {baseActiveOffset+activeOffset}(pTape)
-        }
-        break;
-      case ']':
-        » sb zero, {baseActiveOffset+activeOffset}(pTape)
-        return;
-    }
-  }
-}
+» .macro lbeqz reg, target
+»   .if delta13 target
+»     beqz reg, target
+»   .else
+»     bnez reg, 1f
+»     j target
+»   1:
+»   .endif
+» .endm
+»
+» .macro lbnez reg, target
+»   .if delta13 target
+»     bnez reg, target
+»   .else
+»     beqz reg, 1f
+»     j target
+»   1:
+»   .endif
+» .endm
+»
 
 static void bf_compile(const char* program, Javelin::Assembler &assembler)
 {
@@ -163,102 +55,62 @@ static void bf_compile(const char* program, Javelin::Assembler &assembler)
   int n;
   int nloops = 0;
   int labelIndex = 0;
-  int activeOffset = 0;
-  int lastStore = -1;
-  const char *start = program;
 
   for(;;) {
     switch(*program++) {
     case '<':
       for(n = 1; *program == '<'; ++n, ++program);
-      activeOffset -= n;
+      » addi pTape, {-n}
       break;
     case '>':
       for(n = 1; *program == '>'; ++n, ++program);
-      activeOffset += n;
+      » addi pTape, {n}
       break;
     case '+':
       for(n = 1; *program == '+'; ++n, ++program);
-      UpdateOffsetBounds(assembler, activeOffset);
-      » lb a0, {activeOffset}(pTape)
+      » lb a0, (pTape)
       » addi a0, {n}
-      » sb a0, {activeOffset}(pTape)
-      lastStore = activeOffset;
+      » sb a0, (pTape)
       break;
     case '-':
       for(n = 1; *program == '-'; ++n, ++program);
-      UpdateOffsetBounds(assembler, activeOffset);
-      » lb a0, {activeOffset}(pTape)
+      » lb a0, (pTape)
       » addi a0, {-n}
-      » sb a0, {activeOffset}(pTape)
-      lastStore = activeOffset;
+      » sb a0, (pTape)
       break;
     case ',':
-      UpdateOffsetBounds(assembler, activeOffset);
       » jalr getch
-      » sb a0, {activeOffset}(pTape)
-      lastStore = activeOffset;
+      » sb a0, (pTape)
       break;
     case '.':
-      UpdateOffsetBounds(assembler, activeOffset);
-      » lb a0, {activeOffset}(pTape)
+      » lb a0, (pTape)
       » jalr putch
-      lastStore = -1;
       break;
     case '[':
       if(nloops == MAX_NESTING)
         bad_program("Nesting too deep");
       if(program[0] == '-' && program[1] == ']') {
         // Special case zero detection,
-        UpdateOffsetBounds(assembler, activeOffset);
-        » sb zero, {activeOffset}(pTape)
+        » sb zero, (pTape)
         program += 2;
-      } else if(bf_isBalancedLoopWithSingleDecrement(program)) {
-        bf_emitBalancedLoopWithSingleDecrement(assembler, program, activeOffset);
       } else {
-        // If the previuos symbol was also a while (*ptr)
-        // Then no updates to activeOffset or a comparison need to be made.
-        if(program-2 < start || program[-2] != '[') {
-          if(activeOffset != lastStore) {
-            UpdateOffsetBounds(assembler, activeOffset);
-            » lb a0, {activeOffset}(pTape)
-          }
-          UpdateOffset(assembler, activeOffset);
-          » bnez a0, {labelIndex}f
-          » j {labelIndex+1}f
-          »{labelIndex}:
-          loops[nloops] = labelIndex|1;
-        } else {
-          »{labelIndex}:
-          loops[nloops] = labelIndex;
-        }
+        » lb a0, (pTape)
+        » lbeqz a0, {labelIndex+1}f
+        »{labelIndex}:
+        
+        loops[nloops] = labelIndex;
         ++nloops;
         labelIndex += 2;
       }
-      lastStore = -1;
       break;
     case ']':
       if(nloops == 0) {
         bad_program("] without matching [");
       } else {
         int labelIndex = loops[--nloops];
-        if(activeOffset != lastStore) {
-          UpdateOffsetBounds(assembler, activeOffset);
-          » lb a0, {activeOffset}(pTape)
-        }
-        UpdateOffset(assembler, activeOffset);
-        if(labelIndex & 1)
-        {
-          » beqz a0, {labelIndex}f
-          » j {labelIndex-1}b
-          »{labelIndex}:
-        }
-        else
-        {
-          »   beqz a0, 1f
-          »   j {labelIndex}b
-          » 1:
-        }
+        » lb a0, (pTape)
+        » lbnez a0, {labelIndex}b
+        »{labelIndex+1}:
       }
       break;
     case 0:
@@ -287,9 +139,9 @@ static void bf_run(const char* program)
     » sd putch, 8(sp)
     » sd getch, 16(sp)
     » sd ra, 24(sp)
-    » ld pTape, (a0)
-    » ld putch, 8(a0)
-    » ld getch, 16(a0)
+    » mv pTape, a0
+    » mv putch, a1
+    » mv getch, a2
     bf_compile(program, assembler);
     » ld pTape, (sp)
     » ld putch, 8(sp)
@@ -304,16 +156,14 @@ static void bf_run(const char* program)
 
     uint64_t startBuild = GetMicroTime();
 #endif
-    void (*function)(bf_state_t*) = (void(*)(bf_state_t*))assembler.Build();
+    typedef void (*JitMethod)(unsigned char* tape, int (*putchar)(int), int (*getchar)());
+    JitMethod function = (JitMethod) assembler.Build();
 #if !RUN_BUILD_BENCHMARK
     uint64_t endBuild = GetMicroTime();
     printf("Build time: %lluus\n", endBuild - startBuild);
+    printf("Code size: %u\n", assembler.codeSize);
 
-    bf_state_t state;
-    state.tape = &tape[0];
-    state.get_ch = bf_getchar;
-    state.put_ch = bf_putchar;
-    function(&state);
+    function(tape, putchar, getchar);
 #endif
     
     Javelin::SimpleJitMemoryManager::StaticInstanceRelease((void*) function);

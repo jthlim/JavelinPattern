@@ -1,6 +1,6 @@
 //============================================================================
 
-#if 1 // defined(__riscv)
+#if defined(__riscv)
 
 //============================================================================
 
@@ -377,7 +377,7 @@ void SegmentAssembler::ProcessByteCode()
 
 	// Shrink allocation
 	memoryManager.EndWrite(programStart);
-	uint32_t codeSize = uint32_t(programEnd - programStart);
+	codeSize = uint32_t(programEnd - programStart);
 	assert(codeSize <= maximumCodeSize);
 	memoryManager.Shrink(programStart, codeSize);
 }
@@ -404,7 +404,7 @@ uint32_t SegmentAssembler::PrepareGenerateByteCode()
 		uint32_t endOffset;
 	};
 	AlternateData alternateStack[8];
-	bool takeJump = false;
+	bool takeJump = true;
 	int alternateStackSize = 0;
 	
 #if USE_GOTO_LABELS
@@ -483,7 +483,7 @@ uint32_t SegmentAssembler::PrepareGenerateByteCode()
 				alternateStack[alternateStackSize].startOffset = offset;
 				alternateStack[alternateStackSize].endOffset = offset + maximumSize;
 				++alternateStackSize;
-				takeJump = false;
+				takeJump = true;
 				CONTINUE;
 			}
 		CASE(EndAlternate):
@@ -505,6 +505,7 @@ uint32_t SegmentAssembler::PrepareGenerateByteCode()
 			{
 				++s;
 				offset = alternateStack[alternateStackSize-1].startOffset;
+                takeJump = true;
 			}
 			CONTINUE;
         CASE(MaskedPatchB1Opcode):
@@ -567,7 +568,6 @@ uint32_t SegmentAssembler::PrepareGenerateByteCode()
 				int8_t v = ReadB1ExpressionValue(s, blockData);
 				uint32_t offset = *s++;
 				if(v != 0) s += offset;
-				else takeJump = true;
 				CONTINUE;
 			}
 		CASE(Imm0B2Condition):
@@ -575,7 +575,6 @@ uint32_t SegmentAssembler::PrepareGenerateByteCode()
 				int32_t v = ReadB2ExpressionValue(s, blockData);
 				uint32_t offset = *s++;
 				if(v != 0) s += offset;
-				else takeJump = true;
 				CONTINUE;
 			}
 		CASE(Imm0B4Condition):
@@ -583,7 +582,6 @@ uint32_t SegmentAssembler::PrepareGenerateByteCode()
 				int32_t v = ReadB4ExpressionValue(s, blockData);
 				uint32_t offset = *s++;
 				if(v != 0) s += offset;
-				else takeJump = true;
 				CONTINUE;
 			}
 		CASE(Imm0B8Condition):
@@ -591,7 +589,6 @@ uint32_t SegmentAssembler::PrepareGenerateByteCode()
 				int64_t v = ReadB8ExpressionValue(s, blockData);
 				uint32_t offset = *s++;
 				if(v != 0) s += offset;
-				else takeJump = true;
 				CONTINUE;
 			}
         CASE(SimmCondition):
@@ -646,7 +643,6 @@ uint32_t SegmentAssembler::PrepareGenerateByteCode()
 					int32_t delta = target - offset;
                     delta >>= bitShift;
 					if(delta != 0 && delta != 1) offset += jumpOffset;
-					else takeJump = true;
 				}
 				else
 				{
@@ -668,6 +664,7 @@ uint32_t SegmentAssembler::PrepareGenerateByteCode()
 				uint32_t jumpOffset = *s++;
 				forwardLabelReferences[index+blockData->forwardLabelReferenceOffset] = offset;
 				s += jumpOffset;
+                takeJump = false;
 			}
 			CONTINUE;
 		{
@@ -683,12 +680,10 @@ uint32_t SegmentAssembler::PrepareGenerateByteCode()
 		ProcessBackwardCondition:
 			{
                 int bitShift = *s++;
-				uint32_t rel8Offset = *s++;
 				uint32_t jumpOffset = *s++;
 				uint32_t target = firstPassLabelOffsets.GetLastLabelOffset(labelId);
-				int32_t delta = target - (offset + rel8Offset);
+				int32_t delta = target - offset;
 				if((delta >> bitShift) != -1) offset += jumpOffset;
-				else takeJump = true;
 			}
 			CONTINUE;
 		}

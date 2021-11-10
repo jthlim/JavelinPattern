@@ -187,6 +187,11 @@ DECLARE_INSTRUCTION(SRAI);
 DECLARE_SINGLE_CANDIDATE_INSTRUCTION(SLTI, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1, MatchComma, MatchImm12|MatchOp2), I, ExtensionBitmask::RV32I, 0x00002013);
 DECLARE_SINGLE_CANDIDATE_INSTRUCTION(SLTIU, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1, MatchComma, MatchImm12|MatchOp2), I, ExtensionBitmask::RV32I, 0x00003013);
 
+DECLARE_SINGLE_CANDIDATE_INSTRUCTION(SEQZ, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1), I, ExtensionBitmask::RV32I, 0x00103013);
+DECLARE_SINGLE_CANDIDATE_INSTRUCTION(SNEZ, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp2), R, ExtensionBitmask::RV32I, 0x00003033);
+DECLARE_SINGLE_CANDIDATE_INSTRUCTION(SLTZ, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1), R, ExtensionBitmask::RV32I, 0x00002033);
+DECLARE_SINGLE_CANDIDATE_INSTRUCTION(SGTZ, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp2), R, ExtensionBitmask::RV32I, 0x00002033);
+
 constexpr EncodingVariant EBREAK_ENCODING_VARIANTS[] =
 {
     DECLARE_CANDIDATE((), CFixed, ExtensionBitmask::C, 0x9002),
@@ -228,6 +233,8 @@ DECLARE_SINGLE_CANDIDATE_INSTRUCTION(JAL, (MatchRegX|MatchOp0, MatchComma, Match
 
 constexpr EncodingVariant JALR_ENCODING_VARIANTS[] =
 {
+    // c.jalr xs
+    DECLARE_CANDIDATE((MatchRegX|MatchOp0), CR, ExtensionBitmask::C, 0x9002),
     // jalr xs
     DECLARE_CANDIDATE((MatchRegX|MatchOp1), I, ExtensionBitmask::RV32I, 0x000000e7),
     // jalr xs, offset
@@ -259,6 +266,7 @@ constexpr EncodingVariant MV_ENCODING_VARIANTS[] =
 };
 DECLARE_INSTRUCTION(MV);
 
+DECLARE_SINGLE_CANDIDATE_INSTRUCTION(NEG, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp2), R, ExtensionBitmask::RV32I, 0x40000033);
 DECLARE_SINGLE_CANDIDATE_INSTRUCTION(NOT, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1), I, ExtensionBitmask::RV32I, 0xfff04013);
 
 constexpr EncodingVariant BEQZ_ENCODING_VARIANTS[] =
@@ -448,6 +456,7 @@ InstructionMap::InstructionMap()
     (*this)["nop"] = &NOP;
     (*this)["li"] = &LI;
     (*this)["mv"] = &MV;
+    (*this)["neg"] = &NEG;
     (*this)["not"] = &NOT;
 
     (*this)["beqz"] = &BEQZ;
@@ -461,6 +470,11 @@ InstructionMap::InstructionMap()
     (*this)["ble"] = &BLE;
     (*this)["bgtu"] = &BGTU;
     (*this)["bleu"] = &BLEU;
+
+    (*this)["seqz"] = &SEQZ;
+    (*this)["snez"] = &SNEZ;
+    (*this)["sltz"] = &SLTZ;
+    (*this)["sgtz"] = &SGTZ;
 
     (*this)["j"] = &J;
     (*this)["ret"] = &RET;

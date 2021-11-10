@@ -169,13 +169,6 @@ AlternateActionCondition::Result DeltaAlternateActionCondition::IsValid(const Ac
 
 void DeltaAlternateActionCondition::WriteByteCode(std::vector<uint8_t> &result, ActionWriteContext &context, const Action &action) const
 {
-    if(!action.GetLastAction() || dynamic_cast<const PatchLabelAction*>(action.GetLastAction()) == nullptr)
-    {
-        throw AssemblerException("Internal error: DeltaAlternateAction unable to find PatchLabelAction");
-    }
-    
-    const LabelOperand& labelOperand = dynamic_cast<const PatchLabelAction*>(action.GetLastAction())->labelOperand;
-    
     // Prefix with condition code
     std::vector<uint8_t> conditionCode;
     if(labelOperand.IsExpression())

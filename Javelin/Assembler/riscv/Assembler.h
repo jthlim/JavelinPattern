@@ -44,6 +44,9 @@ namespace Javelin
 		void* GetExpressionLabelAddress(uint32_t label) const { return labels.GetIfExists(GetLabelIdForExpression(label)); }
 
 		void Reset()										  { buildData.Clear(); allLabelData = { }; }
+        
+        // Provides the size of the code once the segment has been built.
+        uint32_t codeSize = (uint32_t) -1;
 
 	private:
 		// Any changes to this need to be reflected in:

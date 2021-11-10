@@ -6,14 +6,42 @@ static void (*CreateRV32ITest())()
 {
   Javelin::Assembler assembler;
   
-  »   slli a1, a2, {3}
+  »   add a0, a1, a2
+  »   and a0, a1, a2
+  »   or a0, a1, a2
+  »   sll a0, a1, a2
+  »   slt a0, a1, a2
+  »   sltu a0, a1, a2
+  »   sra a0, a1, a2
+  »   srl a0, a1, a2
+  »   sub a0, a1, a2
+  »   xor a0, a1, a2
   
+  »   addi a0, a1, 2
+  »   xori a0, a1, 2
+  »   ori a0, a1, 2
+  »   andi a0, a1, 2
+  »   slli a0, a1, 2
+  »   srli a0, a1, 2
+  »   srai a0, a1, 2
+  »   slti a0, a1, 2
+  »   sltiu a0, a1, 2
+  
+  »   lb a0, 1(s0)
+  »   lh a0, -1(s0)
+  »   lw a0, 1(s0)
+  »   ld a0, -1(s0)
+  »   lbu a0, 1(s0)
+  »   lhu a0, -1(s0)
+  »   lwu a0, 1(s0)
+
+  »   sb a0, 1(s0)
+  »   sh a0, -1(s0)
+  »   sw a0, 1(s0)
+  »   sd a0, -1(s0)
+
   »   beq t0, t1, test
   »   jal x5, test
-  »   add t1, t2, t3
-  »   sub a0, a1, a2
-  »   addi t1, t2, -123
-  »   srai t1, t2, 3
   » test:
     
   »   jalr t1
@@ -23,19 +51,9 @@ static void (*CreateRV32ITest())()
 
   »   lui x2, 0x87654
     
-  »   lb x1, -100(t2)
-  »   lb x1, (t2)
-  »   sw x1, -100(t2)
-  »   sw x1, (t2)
-
+  »   neg x4, x5
   »   not x4, x5
     
-
-  for(int i = 0; i < 30; ++i)
-  {
-    » add regx{i}, regx{i+1}, regx{i+2}
-  }
-
   return (void(*)()) assembler.Build();
 }
 
