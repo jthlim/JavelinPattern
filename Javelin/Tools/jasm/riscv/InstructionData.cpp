@@ -238,7 +238,14 @@ DECLARE_SINGLE_CANDIDATE_INSTRUCTION(BGE, (MatchRegX|MatchOp0, MatchComma, Match
 DECLARE_SINGLE_CANDIDATE_INSTRUCTION(BLTU, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1, MatchComma, MatchBRel|MatchOp2), B, ExtensionBitmask::RV32I, 0x00006063);
 DECLARE_SINGLE_CANDIDATE_INSTRUCTION(BGEU, (MatchRegX|MatchOp0, MatchComma, MatchRegX|MatchOp1, MatchComma, MatchBRel|MatchOp2), B, ExtensionBitmask::RV32I, 0x00007063);
 
-DECLARE_SINGLE_CANDIDATE_INSTRUCTION(JAL, (MatchRegX|MatchOp0, MatchComma, MatchJRel|MatchOp1), J, ExtensionBitmask::RV32I, 0x0000006f);
+constexpr EncodingVariant JAL_ENCODING_VARIANTS[] =
+{
+    DECLARE_CANDIDATE((MatchCJRel|MatchOp0), CJ, ExtensionBitmask::C, 0x2001),
+    DECLARE_CANDIDATE((MatchRegX|MatchOp0, MatchComma, MatchJRel|MatchOp1), J, ExtensionBitmask::RV32I, 0x0000006f),
+};
+DECLARE_INSTRUCTION(JAL);
+
+DECLARE_SINGLE_CANDIDATE_INSTRUCTION(N_JAL, (MatchRegX|MatchOp0, MatchComma, MatchJRel|MatchOp1), J, ExtensionBitmask::RV32I, 0x0000006f);
 
 constexpr EncodingVariant JALR_ENCODING_VARIANTS[] =
 {
@@ -292,6 +299,8 @@ constexpr EncodingVariant BNEZ_ENCODING_VARIANTS[] =
 };
 DECLARE_INSTRUCTION(BNEZ);
 
+DECLARE_SINGLE_CANDIDATE_INSTRUCTION(N_BEQZ, (MatchRegX|MatchOp0, MatchComma, MatchBRel|MatchOp2), B, ExtensionBitmask::RV32I, 0x00000063);
+DECLARE_SINGLE_CANDIDATE_INSTRUCTION(N_BNEZ, (MatchRegX|MatchOp0, MatchComma, MatchBRel|MatchOp2), B, ExtensionBitmask::RV32I, 0x00001063);
 DECLARE_SINGLE_CANDIDATE_INSTRUCTION(BLEZ, (MatchRegX|MatchOp1, MatchComma, MatchBRel|MatchOp2), B, ExtensionBitmask::RV32I, 0x00005063);
 DECLARE_SINGLE_CANDIDATE_INSTRUCTION(BGEZ, (MatchRegX|MatchOp0, MatchComma, MatchBRel|MatchOp2), B, ExtensionBitmask::RV32I, 0x00005063);
 DECLARE_SINGLE_CANDIDATE_INSTRUCTION(BLTZ, (MatchRegX|MatchOp0, MatchComma, MatchBRel|MatchOp2), B, ExtensionBitmask::RV32I, 0x00004063);
@@ -308,6 +317,7 @@ constexpr EncodingVariant J_ENCODING_VARIANTS[] =
     DECLARE_CANDIDATE((MatchJRel|MatchOp1), J, ExtensionBitmask::RV32I, 0x0000006f),
 };
 DECLARE_INSTRUCTION(J);
+DECLARE_SINGLE_CANDIDATE_INSTRUCTION(N_J, (MatchJRel|MatchOp1), J, ExtensionBitmask::RV32I, 0x0000006f);
 
 constexpr EncodingVariant RET_ENCODING_VARIANTS[] =
 {
@@ -451,6 +461,7 @@ InstructionMap::InstructionMap()
     (*this)["bltu"] = &BLTU;
     (*this)["bgeu"] = &BGEU;
 
+    (*this)["n.jal"] = &N_JAL;
     (*this)["jal"] = &JAL;
     (*this)["jalr"] = &JALR;
 
@@ -468,6 +479,8 @@ InstructionMap::InstructionMap()
     (*this)["neg"] = &NEG;
     (*this)["not"] = &NOT;
 
+    (*this)["n.beqz"] = &N_BEQZ;
+    (*this)["n.bnez"] = &N_BNEZ;
     (*this)["beqz"] = &BEQZ;
     (*this)["bnez"] = &BNEZ;
     (*this)["blez"] = &BLEZ;
@@ -485,6 +498,7 @@ InstructionMap::InstructionMap()
     (*this)["sltz"] = &SLTZ;
     (*this)["sgtz"] = &SGTZ;
 
+    (*this)["n.j"] = &N_J;
     (*this)["j"] = &J;
     (*this)["ret"] = &RET;
     

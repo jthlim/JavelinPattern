@@ -19,7 +19,7 @@ namespace Javelin::Assembler
             RiscV,
 			X64,
 		};
-
+        
 		AssemblerType(Type aType) : type(aType) { }
 		AssemblerType(const std::string& type);
 
@@ -35,7 +35,25 @@ namespace Javelin::Assembler
 		// either the end of line, or a whitespace.
 		static bool HasPrefix(const char *data, const char *end, const char *prefix, int length);
 	};
-	
+
+    class RiscVCMode
+    {
+    public:
+        enum Value : uint8_t
+        {
+            Maybe,
+            Always,
+            Never,
+        };
+        
+        RiscVCMode(Value aValue) : value(aValue) { }
+
+        operator Value() const { return value; }
+        explicit operator bool() const = delete;
+        
+    private:
+        Value value;
+    };
 	
 	/// Configuration that needs to be specified on the command line
 	class CommandLine
@@ -53,6 +71,7 @@ namespace Javelin::Assembler
 		const char*			GetInputFilename() const				{ return inputFilename;		}
 		const char* 		GetAssemblerVariableName() const 		{ return assemblerVariableName; }
 		AssemblerType		GetAssemblerType() const				{ return assemblerType; }
+        RiscVCMode          GetRiscVCMode() const                   { return riscVCMode; }
 
 		void SetAssemblerType(AssemblerType aAssemblerType)			{ assemblerType = aAssemblerType; }
 		
@@ -66,6 +85,7 @@ namespace Javelin::Assembler
 		bool            useUnsafeOptimizations  	= false;
 		bool			useSpeedOptimizations		= false;
 		AssemblerType	assemblerType				= AssemblerType::X64;
+        RiscVCMode      riscVCMode                  = RiscVCMode::Maybe;
 		std::string		assemblerPrefix				= "»";
 		std::string		preprocessorPrefix			= "«";
 		const char*		outputFilename				= nullptr;

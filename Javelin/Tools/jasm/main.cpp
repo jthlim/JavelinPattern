@@ -167,30 +167,51 @@ void Main::ProcessFileSegments(FILE *outputFile)
 						}
 						break;
                     case AssemblerType::RiscV:
+                        switch (commandLine.GetRiscVCMode())
                         {
-                            riscv::Assembler assembler(false);
-                            assembler.AssembleSegment(*codeSegment, fileSegments.GetFilenameList());
-                            if(Log::IsVerboseEnabled()) assembler.Dump();
-                            riscv::Assembler compressedAssembler(true);
-                            compressedAssembler.AssembleSegment(*codeSegment, fileSegments.GetFilenameList());
-                            if(Log::IsVerboseEnabled()) compressedAssembler.Dump();
-                            if (!assembler.IsEquivalentByteCode(compressedAssembler))
+                        case RiscVCMode::Maybe:
                             {
-                                fprintf(outputFile, "#line %d\n", codeSegment->GetStartingLine());
-                                fprintf(outputFile, "if (Javelin::Assembler::CanUseCompressedInstructions()) {\n");
-                                fprintf(outputFile, "#line %d\n", codeSegment->GetStartingLine());
-                                compressedAssembler.Write(outputFile, lineNumber, &expectedFileIndex, fileSegments.GetFilenameList());
-                                fprintf(outputFile, "#line %d\n", codeSegment->GetStartingLine());
-                                fprintf(outputFile, "} else {\n");
-                                fprintf(outputFile, "#line %d\n", codeSegment->GetStartingLine());
-                                assembler.Write(outputFile, lineNumber, &expectedFileIndex, fileSegments.GetFilenameList());
-                                fprintf(outputFile, "#line %d\n", codeSegment->GetStartingLine());
-                                fprintf(outputFile, "}\n");
+                                riscv::Assembler assembler(false);
+                                assembler.AssembleSegment(*codeSegment, fileSegments.GetFilenameList());
+                                if(Log::IsVerboseEnabled()) assembler.Dump();
+                                riscv::Assembler compressedAssembler(true);
+                                compressedAssembler.AssembleSegment(*codeSegment, fileSegments.GetFilenameList());
+                                if(Log::IsVerboseEnabled()) compressedAssembler.Dump();
+                                if (!assembler.IsEquivalentByteCode(compressedAssembler))
+                                {
+                                    fprintf(outputFile, "#line %d\n", codeSegment->GetStartingLine());
+                                    fprintf(outputFile, "if (Javelin::Assembler::CanUseCompressedInstructions()) {\n");
+                                    fprintf(outputFile, "#line %d\n", codeSegment->GetStartingLine());
+                                    compressedAssembler.Write(outputFile, lineNumber, &expectedFileIndex, fileSegments.GetFilenameList());
+                                    fprintf(outputFile, "#line %d\n", codeSegment->GetStartingLine());
+                                    fprintf(outputFile, "} else {\n");
+                                    fprintf(outputFile, "#line %d\n", codeSegment->GetStartingLine());
+                                    assembler.Write(outputFile, lineNumber, &expectedFileIndex, fileSegments.GetFilenameList());
+                                    fprintf(outputFile, "#line %d\n", codeSegment->GetStartingLine());
+                                    fprintf(outputFile, "}\n");
+                                }
+                                else
+                                {
+                                    assembler.Write(outputFile, lineNumber, &expectedFileIndex, fileSegments.GetFilenameList());
+                                }
                             }
-                            else
+                            break;
+                        case RiscVCMode::Always:
                             {
+                                riscv::Assembler assembler(true);
+                                assembler.AssembleSegment(*codeSegment, fileSegments.GetFilenameList());
+                                if(Log::IsVerboseEnabled()) assembler.Dump();
                                 assembler.Write(outputFile, lineNumber, &expectedFileIndex, fileSegments.GetFilenameList());
                             }
+                            break;
+                        case RiscVCMode::Never:
+                            {
+                                riscv::Assembler assembler(false);
+                                assembler.AssembleSegment(*codeSegment, fileSegments.GetFilenameList());
+                                if(Log::IsVerboseEnabled()) assembler.Dump();
+                                assembler.Write(outputFile, lineNumber, &expectedFileIndex, fileSegments.GetFilenameList());
+                            }
+                            break;
                         }
                         break;
 					case AssemblerType::X64:

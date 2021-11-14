@@ -167,6 +167,38 @@ The cost of this is having an extra step at build time.
   »   add eax, {imm}
   » 2:
   ```
+  
+  Similarly, on riscv, compressed instructions will be automatically used t
+  save code size.
+  
+  Example:
+  
+  ```c++
+    int32_t imm0 = 0x12;
+    int32_t imm1 = 0x123;
+    
+    » li a0, {imm0}
+    » li a0, {imm1}
+  ```
+  
+  Generates:
+
+  ```
+    49 45        c.li a0, 0x12
+    13 05 30 12  li a0, 0x123
+  ```
+
+  The usage of riscv compressed instructions can be controlled with a command 
+  line parameter `-riscvcmode`:
+
+  * `always`: Assume compressed instructions are available
+  
+  * `never`: Assume compressed instructions are not avaialble
+  
+  * `maybe`: Encode both compressed and normal instructions. Generation depends
+             on calling riscv::Assembler::SetMisa() at initialization. `misa`
+             is the machine control status register value, where bit 2 (value 4)
+             determines if compressed instructions should be used.
 
 # Example
 
@@ -186,6 +218,10 @@ static int (*CreateTest(int returnValue))()
 #elif defined(__arm64__)
   » .arm64
   » mov w0, #{returnValue}
+  » ret
+#elif defined(__riscv)
+  » .riscv
+  » li a0, {returnValue}
   » ret
 #else
   #error "Unsupported runtime"
@@ -414,9 +450,11 @@ There are extra `<cond>` available per architecture detailed below too.
 
 Format uses intel syntax.
 
+```
     » mov eax, ebx
     » movzx eax, byte ptr [rsi]
     » call [rbx + rdx]
+```
 
 Most instructions are supported from:
 
@@ -526,7 +564,7 @@ Example:
 
 #### Extra conditions for `.if` statements
 
-* `delta21{` _expr_ `}` or  `adr{` _expr_ `}`
+* `delta21{` _expr_ `}` or `adr{` _expr_ `}`
 * `delta26x4{` _expr_ `}` 
 * `adrp{` _expr_ `}`
 
@@ -554,4 +592,15 @@ The following keywords are used for parameterized registers:
 * General Purpose Registers
   * `regx` 
   * `regf`
+
+Example:
+
+```
+» li regx{regIndex}, 1
+```
+
+#### Extra conditions for `.if` statements
+
+* `signed12`
+* `delta##{` target `}` 
 

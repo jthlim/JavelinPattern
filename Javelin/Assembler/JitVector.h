@@ -67,6 +67,8 @@ namespace Javelin
 		
 		void StartUseBacking(JitVector &a)
 		{
+            assert(data == nullptr);
+            
 			offset = a.offset;
 			capacity = a.capacity;
 			data = a.data;

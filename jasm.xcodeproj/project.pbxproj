@@ -380,8 +380,8 @@
 		8322BFBD23BF6CB600715F3E /* x64 */ = {
 			isa = PBXGroup;
 			children = (
-				8322BFBE23BF6CB600715F3E /* Assembler.h */,
 				8322BFBF23BF6CB600715F3E /* Assembler.cpp */,
+				8322BFBE23BF6CB600715F3E /* Assembler.h */,
 				8322BFC023BF6CB600715F3E /* ActionType.h */,
 				8322BFC123BF6CB600715F3E /* ActionTypeTags.h */,
 			);
@@ -391,9 +391,9 @@
 		8322BFCD23BF6CB600715F3E /* arm64 */ = {
 			isa = PBXGroup;
 			children = (
+				8322BFD023BF6CB600715F3E /* Assembler.cpp */,
 				8322BFCE23BF6CB600715F3E /* Assembler.h */,
 				8322BFCF23BF6CB600715F3E /* ActionType.cpp */,
-				8322BFD023BF6CB600715F3E /* Assembler.cpp */,
 				8322BFD123BF6CB600715F3E /* ActionType.h */,
 				8322BFD223BF6CB600715F3E /* ActionTypeTags.h */,
 			);

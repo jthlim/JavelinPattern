@@ -16,6 +16,10 @@
 //  » .arm64
 //  » mov w0, #{returnValue}
 //  » ret
+//#elif defined(__riscv)
+//  » .riscv
+//  » li a0, {returnValue}
+//  » ret
 //#else
 //  #error "Unsupported runtime"
 //#endif

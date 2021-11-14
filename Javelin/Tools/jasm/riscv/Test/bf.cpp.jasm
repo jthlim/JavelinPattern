@@ -28,22 +28,22 @@ static uint64_t GetMicroTime()
 » .define putch s2
 » .define getch s3
 
-» .macro lbeqz reg, target
+» .macro l_beqz reg, target
 »   .if delta13 target
 »     beqz reg, target
 »   .else
 »     bnez reg, 1f
-»     j target
+»     n.j target
 »   1:
 »   .endif
 » .endm
 »
-» .macro lbnez reg, target
+» .macro l_bnez reg, target
 »   .if delta13 target
 »     bnez reg, target
 »   .else
 »     beqz reg, 1f
-»     j target
+»     n.j target
 »   1:
 »   .endif
 » .endm
@@ -239,7 +239,7 @@ static void bf_compile(const char* program, Javelin::Assembler &assembler)
             » lb a0, {activeOffset}(pTape)
           }
           UpdateOffset(assembler, activeOffset);
-          » lbeqz a0, {labelIndex+1}f
+          » l_beqz a0, {labelIndex+1}f
           »{labelIndex}:
         } else {
           »{labelIndex}:
@@ -265,7 +265,7 @@ static void bf_compile(const char* program, Javelin::Assembler &assembler)
           » lb a0, {activeOffset}(pTape)
         }
         UpdateOffset(assembler, activeOffset);
-        » lbnez a0, {labelIndex}b
+        » l_bnez a0, {labelIndex}b
         »{labelIndex+1}:
       }
       lastStore = UNKNOWN_STORE;

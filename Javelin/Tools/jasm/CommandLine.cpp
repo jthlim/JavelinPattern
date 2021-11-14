@@ -152,6 +152,32 @@ CommandLine::CommandLine(int argc, const char** argv)
             assemblerType = AssemblerType::RiscV;
             ++i;
         }
+        else if(strcmp(argv[i], "-riscvcmode") == 0)
+        {
+            if(++i >= argc)
+            {
+                Log::Error("Missing command line parameter for riscv compressed instruction mode");
+                exit(1);
+            }
+            if(strcmp(argv[i], "maybe") == 0)
+            {
+                riscVCMode = RiscVCMode::Maybe;
+            }
+            else if(strcmp(argv[i], "always") == 0)
+            {
+                riscVCMode = RiscVCMode::Always;
+            }
+            else if(strcmp(argv[i], "never") == 0)
+            {
+                riscVCMode = RiscVCMode::Never;
+            }
+            else
+            {
+                Log::Error("riscv compressed instructions must be \"always\", \"never\" or \"maybe\"");
+                exit(1);
+            }
+            ++i;
+        }
 		else if(strcmp(argv[i], "-x64") == 0
 				|| strcmp(argv[i], "-x86_64") == 0)
 		{
@@ -181,13 +207,14 @@ void CommandLine::ShowHelpTextAndExit(int errorLevel)
     " -h                 This help text.\n"
     " -f <input-file>    Specify the input source file.\n"
 	" -o <output-file>   Specify output source file.\n"
-	" -l <log-level>     Specify log level [verbose,debug,info,warning,error,none].\n"
+	" -l <log-level>     Specify log level [verbose,debug,info*,warning,error,none].\n"
 	" -O                 Optimize build. Some run time errors may not assert.\n"
 	" -Ofast             Optimize build for speed. Size increase tradeoff.\n"
 	" -prefix <str>      Set assembler prefix. Defaults to \"»\".\n"
 	" -pprefix <str>     Set preprocessor prefix. Defaults to \"«\".\n"
     " -v                 Show version.\n"
 	" -varname <name>    Set default assembler variable name. Defaults to \"assembler\".\n"
+    " -riscvcmode <mode> Set riscv compressed instruction mode [always, never, maybe*].\n"
     "\n"
     ;
 	
