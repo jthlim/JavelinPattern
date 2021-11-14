@@ -168,7 +168,7 @@ The cost of this is having an extra step at build time.
   » 2:
   ```
   
-  Similarly, on riscv, compressed instructions will be automatically used t
+  Similarly, on riscv, compressed instructions will be automatically used to
   save code size.
   
   Example:
@@ -265,6 +265,13 @@ static int (*CreateTest(int returnValue))()
     struct JasmExpressionData { ... };
     static const uint8_t *jasmData = (const uint8_t*) "...";
     JasmExpressionData *data = assembler.AppendInstructionData(8, jasmData, 16);
+    data->data0 = returnValue;
+  }  // end jasm block
+#elif defined(__riscv)
+  {  // begin jasm block
+    struct JasmExpressionData { ... };
+    static const uint8_t *jasmData = (const uint8_t*) "...";
+    JasmExpressionData *data = assembler.AppendInstructionData(8, jasmData, 24);
     data->data0 = returnValue;
   }  // end jasm block
 #else
@@ -602,5 +609,5 @@ Example:
 #### Extra conditions for `.if` statements
 
 * `signed12`
-* `delta##{` target `}` 
+* `delta##{` target `}` where `##` is a number in [1, 31].
 
