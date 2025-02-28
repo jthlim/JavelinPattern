@@ -1381,11 +1381,17 @@ static PatternProcessor *CreateAmd64PatternProcessor(const void* data, size_t le
 				int nextPc = instruction.data >> 8;
 				
 				bool useAvx = Machine::SupportsAvx2();
+                void *function = useAvx
+                                 ? Machine::SupportsAvx512BW()
+                                   ? (void*) &InternalAvx512FindByte
+                                   : (void*) &InternalAvx2FindByte
+                                 : (void*) &InternalFindByte;
+                
 				context.EmitCallToSearch(0,			// offset
 										 1,			// continueOffset
 										 1,			// numberOfRegisters
 										 byte,		// searchData
-										 useAvx ? (void*) &InternalAvx2FindByte : (void*) &InternalFindByte,
+										 function,
 										 SearchParameterType::Bytes,
 										 useAvx,
 										 pc);
@@ -1401,14 +1407,20 @@ static PatternProcessor *CreateAmd64PatternProcessor(const void* data, size_t le
 			{
 				int offset = instruction.data >> 8;
 				int byte = instruction.data & 0xff;
-				
-				bool useAvx = Machine::SupportsAvx2();
-				
+
+                bool useAvx = Machine::SupportsAvx2();
+                
+                void *function = useAvx
+                  ? Machine::SupportsAvx512BW()
+                    ? (void*) &InternalAvx512FindByte
+                    : (void*) &InternalAvx2FindByte
+                  : (void*) &InternalFindByte;
+
 				context.EmitCallToSearch(offset,			// offset
 										 -offset,			// continueOffset
 										 1,					// numberOfRegisters
 										 byte,				// searchData
-										 useAvx ? (void*) &InternalAvx2FindByte : (void*) &InternalFindByte,
+                                         function,
 										 SearchParameterType::Bytes,
 										 useAvx,
 										 pc);
@@ -1418,9 +1430,11 @@ static PatternProcessor *CreateAmd64PatternProcessor(const void* data, size_t le
 			{
 				const ByteCodeSearchByteData* data = patternData.GetData<ByteCodeSearchByteData>(instruction.data);
 
-				const void* function = Machine::SupportsAvx2() ?
-										(void*) &InternalAvx2FindEitherOf2 :
-										Machine::SupportsAvx() ?
+				const void* function = Machine::SupportsAvx2()
+                                       ? Machine::SupportsAvx512BW()
+                                         ? (void*) &InternalAvx512FindEitherOf2
+                                         : (void*) &InternalAvx2FindEitherOf2
+                                       : Machine::SupportsAvx() ?
 											(void*) &InternalAvxFindEitherOf2 :
 											(void*) &InternalFindEitherOf2;
 
@@ -1439,11 +1453,13 @@ static PatternProcessor *CreateAmd64PatternProcessor(const void* data, size_t le
 			{
 				const ByteCodeSearchByteData* data = patternData.GetData<ByteCodeSearchByteData>(instruction.data);
 
-				const void* function = Machine::SupportsAvx2() ?
-										(void*) &InternalAvx2FindEitherOf3 :
-										Machine::SupportsAvx() ?
-											(void*) &InternalAvxFindEitherOf3 :
-											(void*) &InternalFindEitherOf3;
+                const void* function = Machine::SupportsAvx2()
+                                       ? Machine::SupportsAvx512BW()
+                                         ? (void*) &InternalAvx512FindEitherOf3
+                                         : (void*) &InternalAvx2FindEitherOf3
+                                       : Machine::SupportsAvx() ?
+                                            (void*) &InternalAvxFindEitherOf3 :
+                                            (void*) &InternalFindEitherOf3;
 
 				context.EmitCallToSearch(data->offset,			// offset
 										 -data->offset,			// continueOffset
@@ -1461,11 +1477,13 @@ static PatternProcessor *CreateAmd64PatternProcessor(const void* data, size_t le
 				const ByteCodeSearchByteData* data = patternData.GetData<ByteCodeSearchByteData>(instruction.data);
 
 				bool avx = Machine::SupportsAvx();
-				const void* function = avx ?
-										Machine::SupportsAvx2() ?
-											(void*) &InternalAvx2FindNibbleMask :
-											(void*) &InternalAvxFindNibbleMask :
-										(void*) &InternalFindEitherOf4;
+				const void* function = avx
+									   ? Machine::SupportsAvx512BW()
+                                         ? (void*) &InternalAvx512FindNibbleMask
+                                         : Machine::SupportsAvx2()
+										   ? (void*) &InternalAvx2FindNibbleMask
+                                           : (void*) &InternalAvxFindNibbleMask
+                                       : (void*) &InternalFindEitherOf4;
 
 				context.EmitCallToSearch(data->offset,			// offset
 										 -data->offset,			// continueOffset
@@ -1483,11 +1501,13 @@ static PatternProcessor *CreateAmd64PatternProcessor(const void* data, size_t le
 				const ByteCodeSearchByteData* data = patternData.GetData<ByteCodeSearchByteData>(instruction.data);
 
 				bool avx = Machine::SupportsAvx();
-				const void* function = avx ?
-										Machine::SupportsAvx2() ?
-											(void*) &InternalAvx2FindNibbleMask :
-											(void*) &InternalAvxFindNibbleMask :
-										(void*) &InternalFindEitherOf5;
+                const void* function = avx
+                                       ? Machine::SupportsAvx512BW()
+                                         ? (void*) &InternalAvx512FindNibbleMask
+                                         : Machine::SupportsAvx2()
+                                           ? (void*) &InternalAvx2FindNibbleMask
+                                           : (void*) &InternalAvxFindNibbleMask
+                                       : (void*) &InternalFindEitherOf5;
 
 				context.EmitCallToSearch(data->offset,			// offset
 										 -data->offset,			// continueOffset
@@ -1505,11 +1525,13 @@ static PatternProcessor *CreateAmd64PatternProcessor(const void* data, size_t le
 				const ByteCodeSearchByteData* data = patternData.GetData<ByteCodeSearchByteData>(instruction.data);
 
 				bool avx = Machine::SupportsAvx();
-				const void* function = avx ?
-										Machine::SupportsAvx2() ?
-											(void*) &InternalAvx2FindNibbleMask :
-											(void*) &InternalAvxFindNibbleMask :
-										(void*) &InternalFindEitherOf6;
+                const void* function = avx
+                                       ? Machine::SupportsAvx512BW()
+                                         ? (void*) &InternalAvx512FindNibbleMask
+                                         : Machine::SupportsAvx2()
+                                           ? (void*) &InternalAvx2FindNibbleMask
+                                           : (void*) &InternalAvxFindNibbleMask
+                                       : (void*) &InternalFindEitherOf6;
 
 				context.EmitCallToSearch(data->offset,			// offset
 										 -data->offset,			// continueOffset
@@ -1527,11 +1549,13 @@ static PatternProcessor *CreateAmd64PatternProcessor(const void* data, size_t le
 				const ByteCodeSearchByteData* data = patternData.GetData<ByteCodeSearchByteData>(instruction.data);
 
 				bool avx = Machine::SupportsAvx();
-				const void* function = avx ?
-										Machine::SupportsAvx2() ?
-											(void*) &InternalAvx2FindNibbleMask :
-											(void*) &InternalAvxFindNibbleMask :
-										(void*) &InternalFindEitherOf7;
+                const void* function = avx
+                                       ? Machine::SupportsAvx512BW()
+                                         ? (void*) &InternalAvx512FindNibbleMask
+                                         : Machine::SupportsAvx2()
+                                           ? (void*) &InternalAvx2FindNibbleMask
+                                           : (void*) &InternalAvxFindNibbleMask
+                                       : (void*) &InternalFindEitherOf7;
 
 				context.EmitCallToSearch(data->offset,			// offset
 										 -data->offset,			// continueOffset
@@ -1549,11 +1573,13 @@ static PatternProcessor *CreateAmd64PatternProcessor(const void* data, size_t le
 				const ByteCodeSearchByteData* data = patternData.GetData<ByteCodeSearchByteData>(instruction.data);
 
 				bool avx = Machine::SupportsAvx();
-				const void* function = avx ?
-										Machine::SupportsAvx2() ?
-											(void*) &InternalAvx2FindNibbleMask :
-											(void*) &InternalAvxFindNibbleMask :
-										(void*) &InternalFindEitherOf8;
+                const void* function = avx
+                                       ? Machine::SupportsAvx512BW()
+                                         ? (void*) &InternalAvx512FindNibbleMask
+                                         : Machine::SupportsAvx2()
+                                           ? (void*) &InternalAvx2FindNibbleMask
+                                           : (void*) &InternalAvxFindNibbleMask
+                                       : (void*) &InternalFindEitherOf8;
 
 				context.EmitCallToSearch(data->offset,			// offset
 										 -data->offset,			// continueOffset
@@ -1571,7 +1597,9 @@ static PatternProcessor *CreateAmd64PatternProcessor(const void* data, size_t le
 				const ByteCodeSearchByteData* data = patternData.GetData<ByteCodeSearchByteData>(instruction.data);
 
 				const void* function = Machine::SupportsAvx2() ?
-										(void*) &InternalAvx2FindPair :
+										Machine::SupportsAvx512BW() ?
+                                            (void*) &InternalAvx512FindPair :
+                                            (void*) &InternalAvx2FindPair :
 										Machine::SupportsAvx() ?
 											(void*) &InternalAvxFindPair :
 											(void*) &InternalFindPair;
@@ -1594,12 +1622,16 @@ static PatternProcessor *CreateAmd64PatternProcessor(const void* data, size_t le
 
 				const void* function = smbd->isPath ?
 										Machine::SupportsAvx2() ?
-											(void*) &InternalAvx2FindPairPath2 :
+                                            Machine::SupportsAvx512BW() ?
+                                                (void*) &InternalAvx512FindPairPath2 :
+                                                (void*) &InternalAvx2FindPairPath2 :
 											Machine::SupportsAvx() ?
 												(void*) &InternalAvxFindPairPath2 :
 												(void*) &InternalFindPair2 :
 										Machine::SupportsAvx2() ?
-											(void*) &InternalAvx2FindPair2 :
+                                            Machine::SupportsAvx512BW() ?
+                                                (void*) &InternalAvx512FindPair2 :
+                                                (void*) &InternalAvx2FindPair2 :
 											Machine::SupportsAvx() ?
 												(void*) &InternalAvxFindPair2 :
 												(void*) &InternalFindPair2;
@@ -1624,10 +1656,14 @@ static PatternProcessor *CreateAmd64PatternProcessor(const void* data, size_t le
 				void* function = avx ?
 									smbd->isPath ?
 										Machine::SupportsAvx2() ?
-											(void*) InternalAvx2FindPairNibbleMaskPath :
-											(void*) InternalAvxFindPairNibbleMaskPath :
+                                            Machine::SupportsAvx512BW() ?
+                                                (void*) InternalAvx512FindPairNibbleMaskPath :
+                                                (void*) InternalAvx2FindPairNibbleMaskPath :
+                                            (void*) InternalAvxFindPairNibbleMaskPath :
 										Machine::SupportsAvx2() ?
-											(void*) InternalAvx2FindPairNibbleMask :
+                                            Machine::SupportsAvx512BW() ?
+                                                (void*) InternalAvx512FindPairNibbleMask :
+                                                (void*) InternalAvx2FindPairNibbleMask :
 											(void*) InternalAvxFindPairNibbleMask :
 									(void*) InternalFindPair3;
 				
@@ -1651,10 +1687,14 @@ static PatternProcessor *CreateAmd64PatternProcessor(const void* data, size_t le
 				void* function = avx ?
 									smbd->isPath ?
 										Machine::SupportsAvx2() ?
-											(void*) InternalAvx2FindPairNibbleMaskPath :
+                                            Machine::SupportsAvx512BW() ?
+                                                (void*) InternalAvx512FindPairNibbleMaskPath :
+                                                (void*) InternalAvx2FindPairNibbleMaskPath :
 											(void*) InternalAvxFindPairNibbleMaskPath :
 										Machine::SupportsAvx2() ?
-											(void*) InternalAvx2FindPairNibbleMask :
+                                            Machine::SupportsAvx512BW() ?
+                                                (void*) InternalAvx512FindPairNibbleMask :
+                                                (void*) InternalAvx2FindPairNibbleMask :
 											(void*) InternalAvxFindPairNibbleMask :
 									(void*) InternalFindPair4;
 				
@@ -1674,7 +1714,9 @@ static PatternProcessor *CreateAmd64PatternProcessor(const void* data, size_t le
 				const ByteCodeSearchByteData* data = patternData.GetData<ByteCodeSearchByteData>(instruction.data);
 
 				const void* function = Machine::SupportsAvx2() ?
-										(void*) &InternalAvx2FindByteRange :
+                                        Machine::SupportsAvx512BW() ?
+                                            (void*) &InternalAvx512FindByteRange :
+                                            (void*) &InternalAvx2FindByteRange :
 										Machine::SupportsAvx() ?
 											(void*) &InternalAvxFindByteRange :
 											(void*) &InternalFindByteRange;
@@ -1802,9 +1844,17 @@ static PatternProcessor *CreateAmd64PatternProcessor(const void* data, size_t le
 						{ (void*) InternalAvxFindTripletNibbleMask, (void*) InternalAvx2FindTripletNibbleMaskPath },
 					};
 					
-					const void* const (*const FUNCTION_TABLE)[2] = Machine::SupportsAvx2() ?
-																	AVX2_FUNCTION_TABLE :
-																	AVX_FUNCTION_TABLE;
+                    static constexpr const void *const AVX512_FUNCTION_TABLE[3][2] = {
+                        { (void*) InternalAvx512FindNibbleMask, (void*) InternalAvx512FindNibbleMask },
+                        { (void*) InternalAvx512FindPairNibbleMask, (void*) InternalAvx512FindPairNibbleMaskPath },
+                        { (void*) InternalAvxFindTripletNibbleMask, (void*) InternalAvx2FindTripletNibbleMaskPath },
+                    };
+                    
+					const void* const (*const FUNCTION_TABLE)[2] = Machine::SupportsAvx512BW()
+                                                                   ? AVX512_FUNCTION_TABLE
+                                                                   : Machine::SupportsAvx2()
+                                                                     ? AVX2_FUNCTION_TABLE
+                                                                     : AVX_FUNCTION_TABLE;
 
 					const void *function = FUNCTION_TABLE[searchData->numberOfNibbleMasks-1][searchData->isPath];
 
@@ -2039,7 +2089,7 @@ static PatternProcessor *CreateAmd64PatternProcessor(const void* data, size_t le
 			{
 				» xor eax, eax
 				» cmp p, pEnd
-				» cmovne rax, p
+				» cmove rax, p
 				» ret
 			}
 			else
@@ -2082,7 +2132,7 @@ static PatternProcessor *CreateAmd64PatternProcessor(const void* data, size_t le
 				}
 				else if(pc > 0
 						&& patternData[pc-1].IsSave()
-						&& (patternData[pc-1].data >> 8) == saveOffset)
+						&& -(patternData[pc-1].data >> 8) == saveOffset)
 				{
 					» mov [pCaptures + {saveIndex}], rax
 				}

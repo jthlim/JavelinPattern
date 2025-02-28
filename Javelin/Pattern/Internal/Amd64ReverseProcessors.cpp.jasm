@@ -138,7 +138,7 @@ namespace
 		bool needsEnd    				= false;
 		bool hasByteJumpToByteJump 		= false;
 		OpenHashSet<uint32_t> byteJumpTargetPcs;
-		
+
 		int checkPStartPc = -1;
 		int checkPEndPc = -1;
 
@@ -150,20 +150,20 @@ namespace
 		{
 			bool needsStackFrame = false;
 		};
-		
+
 		RegistersToSave registersToSave;
-		
+
 		AssemblerContext(Assembler &aAssembler, const PatternData& aPatternData, const ByteCodeHeader *aHeader, PatternProcessorType aType);
-		
+
 		void CheckSufficientDataAndMarkInstructionStart(int pc);
 		int DataOffsetForPc(int pc);
 
 		RegistersToSave GetRegistersToSave() const;
 		void EmitProlog() const;
 		void EmitEpilog() const;
-		
+
 		bool ShouldDirectBranchToStartingInstruction() const { return registersToSave.needsStackFrame == false; }
-		
+
 		int OffsetForProgressCheck(int index) const { return (-header->numberOfProgressChecks + index) * 8 ; }
 		int OffsetForReturnPointer() const { return registersToSave.needsStackFrame ? header->numberOfProgressChecks * 8 + 8 : 0; }
 	};
@@ -205,12 +205,12 @@ AssemblerContext::AssemblerContext(Assembler &aAssembler, const PatternData& aPa
 			case InstructionType::ByteJumpTable:
 				{
 					const ByteCodeJumpTableData* data = patternData.GetData<ByteCodeJumpTableData>(instruction.data);
-					
+
 					if(patternData.HasLookupTableTarget(*data))
 					{
 						hasByteJumpToByteJump = true;
 					}
-					
+
 					for(int i = 0; i < data->numberOfTargets; ++i)
 					{
 						byteJumpTargetPcs.Put(data->pcData[i]);
@@ -265,30 +265,30 @@ void AssemblerContext::CheckSufficientDataAndMarkInstructionStart(int pc)
 		InstructionType::ByteNotEitherOf3,
 		InstructionType::ByteNotRange
 	};
-	
+
 	if(pc < checkPEndPc) return;
-	
+
 	if(pc == checkPEndPc)
 	{
 		» add p, {checkPStartPc - checkPEndPc}
 		checkPStartPc = -1;
 	}
-	
+
 	{
 		// context to make assembler macro work.
 		const AssemblerContext &context = *this;
-		
+
 		» markStartOfInstruction pc
 	}
 
 	if(!COMBINE_PEND_CHECK_INSTRUCTIONS.Contains(patternData[pc].type)) return;
-	
+
 	if(patternData[pc].type == InstructionType::AdvanceByte) return;
 
 	int pcEnd = pc+1;
 	while(patternData[pcEnd].isSingleReference
 		  && COMBINE_PEND_CHECK_INSTRUCTIONS.Contains(patternData[pcEnd].type)) ++pcEnd;
-	
+
 	if(pcEnd == pc+1)
 	{
 		if(header->IsFixedLength() && header->IsAnchored()) return;
@@ -369,7 +369,7 @@ static ReverseProcessor *CreateAmd64ReverseProcessor(const void* data, size_t le
 	PatternData patternData(header->GetReverseProgram());
 
 	JASSERT(header->flags.alwaysRequiresCaptures == false);
-	
+
 	Assembler assembler;
 	AssemblerContext context(assembler, patternData, header, type);
 
@@ -403,7 +403,7 @@ static ReverseProcessor *CreateAmd64ReverseProcessor(const void* data, size_t le
 	default:
 		JUNREACHABLE;
 	}
-	
+
 	» *match:		// data, length, startOffset, matchEnd, **captures, matchIsAnchored
 
 	context.EmitProlog();
@@ -534,7 +534,7 @@ static ReverseProcessor *CreateAmd64ReverseProcessor(const void* data, size_t le
 					Byte,
 					ByteEitherOf2,
 				};
-				
+
 				int repeat = 1;
 				RepeatType repeatType = RepeatType::Byte;
 				while(pc+repeat < numberOfInstructions
@@ -545,7 +545,7 @@ static ReverseProcessor *CreateAmd64ReverseProcessor(const void* data, size_t le
 					case InstructionType::Byte:
 						++repeat;
 						continue;
-						
+
 					case InstructionType::ByteEitherOf2:
 						if(patternData[pc+repeat].IsEitherOf2AndBitMaskIdentifiable())
 						{
@@ -574,7 +574,7 @@ static ReverseProcessor *CreateAmd64ReverseProcessor(const void* data, size_t le
 					if(currentOffset+4 <= repeat) bytes = 4;
 					else if(currentOffset+2 <= repeat) bytes = 2;
 					else bytes = 1;
-					
+
 					for(int i = 0; i < bytes; ++i)
 					{
 						const ByteCodeInstruction &instr = patternData[pc+currentOffset+i];
@@ -583,7 +583,7 @@ static ReverseProcessor *CreateAmd64ReverseProcessor(const void* data, size_t le
 						case InstructionType::Byte:
 							data |= instr.data << (8*i);
 							break;
-							
+
 						case InstructionType::ByteEitherOf2:
 							{
 								int valueA = instr.value      & 0xff;
@@ -593,13 +593,13 @@ static ReverseProcessor *CreateAmd64ReverseProcessor(const void* data, size_t le
 								mask |= xorValue << (8*i);
 							}
 							break;
-							
+
 						default:
 							JERROR("Unexpected");
 							JUNREACHABLE;
 						}
 					}
-					
+
 					if(mask == 0)
 					{
 						switch(bytes)
@@ -661,7 +661,7 @@ static ReverseProcessor *CreateAmd64ReverseProcessor(const void* data, size_t le
 							break;
 						}
 					}
-					
+
 					currentOffset += bytes;
 				}
 				pc += repeat - 1;
@@ -683,10 +683,10 @@ static ReverseProcessor *CreateAmd64ReverseProcessor(const void* data, size_t le
 				uint8_t c0 = instruction.data & 0xff;
 				uint8_t c1 = instruction.data >> 8 & 0xff;
 				uint8_t c2 = instruction.data >> 16;
-				
+
 				if(BitUtility::IsPowerOf2(c1^c2)) Swap(c0, c2);
 				else if(BitUtility::IsPowerOf2(c0^c2)) Swap(c1, c2);
-				
+
 				if(BitUtility::IsPowerOf2(c0 ^ c1))
 				{
 					»  mov al, [p + readOffset]
@@ -837,10 +837,10 @@ static ReverseProcessor *CreateAmd64ReverseProcessor(const void* data, size_t le
 				uint8_t c0 = instruction.data & 0xff;
 				uint8_t c1 = instruction.data >> 8 & 0xff;
 				uint8_t c2 = instruction.data >> 16;
-				
+
 				if(BitUtility::IsPowerOf2(c1^c2)) Swap(c0, c2);
 				else if(BitUtility::IsPowerOf2(c0^c2)) Swap(c1, c2);
-				
+
 				if(BitUtility::IsPowerOf2(c0 ^ c1))
 				{
 					»  mov al, [p + readOffset]
@@ -868,7 +868,7 @@ static ReverseProcessor *CreateAmd64ReverseProcessor(const void* data, size_t le
 			{
 				unsigned char low = instruction.data & 0xff;
 				unsigned char high = (instruction.data >> 8) & 0xff;
-				
+
 				» mov al, [p + readOffset]
 				» advanceP
 				» sub al, {low}
@@ -921,7 +921,7 @@ static ReverseProcessor *CreateAmd64ReverseProcessor(const void* data, size_t le
 				» jbe {data->pcData[0]}bf
 				» movzx eax, byte ptr [p - 1]
 				» cmp byte ptr [scratch64 + rax], 0
-				
+
 				if(data->pcData[0] == pc+1)
 				{
 					» jne {data->pcData[1]}bf
@@ -1250,7 +1250,7 @@ static ReverseProcessor *CreateAmd64ReverseProcessor(const void* data, size_t le
 			break;
 		}
 	}
-	
+
 	return (ReverseProcessor*) assembler.Build();
 }
 

@@ -1,0 +1,202 @@
+$ PatternCompiler -show-info -anchored "(?i)Twain" "TWain"
+
+Pattern: "(?i)Twain"
+Options: ANCHORED
+PartialMatch: one-pass -> 0
+FullMatch: one-pass -> 0
+ReverseMatch: none
+NumberOfCaptures: 1
+NumberOfProgressChecks: 0
+MatchLength: 5
+Anchoring: both
+  0: byte-either-of-2 'T' 't'
+  1. byte-either-of-2 'W' 'w'
+  2. byte-either-of-2 'A' 'a'
+  3. byte-either-of-2 'I' 'i'
+  4. byte-either-of-2 'N' 'n'
+  5. save-no-recurse 0 @ -5
+  6. save-no-recurse 1
+  7. match
+
+    0000: nop    
+    0001: xorl   %eax, %eax
+    0003: retq   
+->  0004: leaq   0x5(%rsi), %r10
+    0008: cmpq   %rdx, %r10
+    000b: ja     0x0001
+    000d: movl   (%rsi), %eax
+    000f: orl    $0x20202020, %eax
+    0014: cmpl   $0x69617774, %eax
+    0019: jne    0x0001
+    001b: movzbl 0x4(%rsi), %eax
+    001f: orb    $0x20, %al
+    0021: cmpb   $0x6e, %al
+    0023: jne    0x0001
+    0025: movq   %rsi, %r10
+    0028: addq   $0x5, %rsi
+    002c: testq  %rcx, %rcx
+    002f: je     003c
+    0035: movq   %r10, (%rcx)
+    0038: movq   %rsi, 0x8(%rcx)
+    003c: movq   %rsi, %rax
+    003f: retq
+
+
+Compiling "[0-9A-Fa-f]{16}"
+Compile took 16µs
+Pattern: "[0-9A-Fa-f]{16}"
+Options: ANCHORED
+PartialMatch: one-pass -> 0
+FullMatch: one-pass -> 0
+ReverseMatch: none
+NumberOfCaptures: 1
+NumberOfProgressChecks: 0
+MatchLength: 16
+Anchoring: both
+  0: byte-bit-mask 000000000000ff037e0000007e00000000000000000000000000000000000000 [0x70]
+  1. byte-bit-mask 000000000000ff037e0000007e00000000000000000000000000000000000000 [0x70]
+  2. byte-bit-mask 000000000000ff037e0000007e00000000000000000000000000000000000000 [0x70]
+  3. byte-bit-mask 000000000000ff037e0000007e00000000000000000000000000000000000000 [0x70]
+  4. byte-bit-mask 000000000000ff037e0000007e00000000000000000000000000000000000000 [0x70]
+  5. byte-bit-mask 000000000000ff037e0000007e00000000000000000000000000000000000000 [0x70]
+  6. byte-bit-mask 000000000000ff037e0000007e00000000000000000000000000000000000000 [0x70]
+  7. byte-bit-mask 000000000000ff037e0000007e00000000000000000000000000000000000000 [0x70]
+  8. byte-bit-mask 000000000000ff037e0000007e00000000000000000000000000000000000000 [0x70]
+  9. byte-bit-mask 000000000000ff037e0000007e00000000000000000000000000000000000000 [0x70]
+ 10. byte-bit-mask 000000000000ff037e0000007e00000000000000000000000000000000000000 [0x70]
+ 11. byte-bit-mask 000000000000ff037e0000007e00000000000000000000000000000000000000 [0x70]
+ 12. byte-bit-mask 000000000000ff037e0000007e00000000000000000000000000000000000000 [0x70]
+ 13. byte-bit-mask 000000000000ff037e0000007e00000000000000000000000000000000000000 [0x70]
+ 14. byte-bit-mask 000000000000ff037e0000007e00000000000000000000000000000000000000 [0x70]
+ 15. byte-bit-mask 000000000000ff037e0000007e00000000000000000000000000000000000000 [0x70]
+ 16. save-no-recurse 0 @ -16
+ 17. save-no-recurse 1
+ 18. match
+
+
+    0000: nop
+    0001: xorl   %eax, %eax
+    0003: retq
+    0004: leaq   0x10(%rsi), %r10
+    0008: cmpq   %rdx, %r10
+    000b: ja     0001
+    000d: movabsq $0x100531d80, %r10        ; imm = 0x100531D80
+    0017: movzbl (%rsi), %eax
+    001a: movzbl 0x1(%rsi), %r11d
+    001f: movb   (%r10,%rax), %al
+    0023: testb  (%r10,%r11), %al
+    0027: je     0001
+    0029: movzbl 0x2(%rsi), %eax
+    002d: movzbl 0x3(%rsi), %r11d
+    0032: movb   (%r10,%rax), %al
+    0036: testb  (%r10,%r11), %al
+    003a: je     0001
+    003c: movzbl 0x4(%rsi), %eax
+    0040: movzbl 0x5(%rsi), %r11d
+    0045: movb   (%r10,%rax), %al
+    0049: testb  (%r10,%r11), %al
+    004d: je     0001
+    004f: movzbl 0x6(%rsi), %eax
+    0053: movzbl 0x7(%rsi), %r11d
+    0058: movb   (%r10,%rax), %al
+    005c: testb  (%r10,%r11), %al
+    0060: je     0001
+    0062: movzbl 0x8(%rsi), %eax
+    0066: movzbl 0x9(%rsi), %r11d
+    006b: movb   (%r10,%rax), %al
+    006f: testb  (%r10,%r11), %al
+    0073: je     0001
+    0075: movzbl 0xa(%rsi), %eax
+    0079: movzbl 0xb(%rsi), %r11d
+    007e: movb   (%r10,%rax), %al
+    0082: testb  (%r10,%r11), %al
+    0086: je     0001
+    008c: movzbl 0xc(%rsi), %eax
+    0090: movzbl 0xd(%rsi), %r11d
+    0095: movb   (%r10,%rax), %al
+    0099: testb  (%r10,%r11), %al
+    009d: je     0001
+    00a3: movzbl 0xe(%rsi), %eax
+    00a7: movzbl 0xf(%rsi), %r11d
+    00ac: movb   (%r10,%rax), %al
+    00b0: testb  (%r10,%r11), %al
+    00b4: je     0001
+    00ba: movq   %rsi, %r10
+    00bd: addq   $0x10, %rsi
+    00c1: testq  %rcx, %rcx
+    00c4: je     00d1
+    00ca: movq   %r10, (%rcx)
+    00cd: movq   %rsi, 0x8(%rcx)
+    00d1: movq   %rsi, %rax
+    00d4: retq   
+
+Pattern: "\(\d{3}\) \d{3}-\d{4}"
+Options: ANCHORED
+PartialMatch: one-pass -> 0
+FullMatch: one-pass -> 0
+ReverseMatch: none
+NumberOfCaptures: 1
+NumberOfProgressChecks: 0
+MatchLength: 14
+Anchoring: both
+  0: byte '('
+  1. byte-range {'0','9'}
+  2. byte-range {'0','9'}
+  3. byte-range {'0','9'}
+  4. byte ')'
+  5. byte ' '
+  6. byte-range {'0','9'}
+  7. byte-range {'0','9'}
+  8. byte-range {'0','9'}
+  9. byte '-'
+ 10. byte-range {'0','9'}
+ 11. byte-range {'0','9'}
+ 12. byte-range {'0','9'}
+ 13. byte-range {'0','9'}
+ 14. save-no-recurse 0 @ -14
+ 15. save-no-recurse 1
+ 16. match
+
+    0000: nop    
+    0001: xorl   %eax, %eax
+    0003: retq   
+->  0004: leaq   0xe(%rsi), %r10
+    0008: cmpq   %rdx, %r10
+    000b: ja     0001
+    000d: movl   (%rsi), %eax
+    000f: movl   $0x39393928, %r10d        ; imm = 0x39393928 
+    0015: subl   %eax, %r10d
+    0018: subl   $0x30303028, %eax         ; imm = 0x30303028 
+    001d: orl    %r10d, %eax
+    0020: testl  $0x80808080, %eax         ; imm = 0x80808080 
+    0025: jne    0001
+    0027: movl   0x4(%rsi), %eax
+    002a: movl   $0x39392029, %r10d        ; imm = 0x39392029 
+    0030: subl   %eax, %r10d
+    0033: subl   $0x30302029, %eax         ; imm = 0x30302029 
+    0038: orl    %r10d, %eax
+    003b: testl  $0x80808080, %eax         ; imm = 0x80808080 
+    0040: jne    0001
+    0042: movl   0x8(%rsi), %eax
+    0045: movl   $0x39392d39, %r10d        ; imm = 0x39392D39 
+    004b: subl   %eax, %r10d
+    004e: subl   $0x30302d30, %eax         ; imm = 0x30302D30 
+    0053: orl    %r10d, %eax
+    0056: testl  $0x80808080, %eax         ; imm = 0x80808080 
+    005b: jne    0001
+    005d: movzbl 0xc(%rsi), %eax
+    0061: subl   $0x30, %eax
+    0064: cmpl   $0x9, %eax
+    0067: ja     0001
+    0069: movzbl 0xd(%rsi), %eax
+    006d: subl   $0x30, %eax
+    0070: cmpl   $0x9, %eax
+    0073: ja     0001
+    0075: movq   %rsi, %r10
+    0078: addq   $0xe, %rsi
+    007c: testq  %rcx, %rcx
+    007f: je     008c
+    0085: movq   %r10, (%rcx)
+    0088: movq   %rsi, 0x8(%rcx)
+    008c: movq   %rsi, %rax
+    008f: retq   

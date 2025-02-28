@@ -15,6 +15,7 @@
 #include "Javelin/Assembler/arm64/Assembler.h"
 #include "Javelin/Container/EnumSet.h"
 #include "Javelin/Pattern/Internal/ArmNeonPatternProcessorsFindMethods.h"
+#include "Javelin/Pattern/Internal/PatternNibbleMask.h"
 
 //============================================================================
 
@@ -101,7 +102,7 @@ namespace
 		int bitStateRegisterIndex;
 		int numberOfBitStateInstructions = 0;
 		OpenHashSet<uint32_t> byteJumpTargetPcs;
-		
+
 		int checkPEndPc = -1;
 
 		Assembler& assembler;
@@ -114,18 +115,19 @@ namespace
 			int numberOfRegisters;
 			uint8_t registers[12];
 		};
-		
+
 		RegistersToSave registersToSave;
-		
+
 		AssemblerContext(Assembler &aAssembler, const PatternData& aPatternData, const ByteCodeHeader *aHeader, PatternProcessorType aType);
-		
+
 		void CheckSufficientData(int pc);
 
 		RegistersToSave GetRegistersToSave() const;
 		void EmitProlog(bool partialMatch, bool hasOffset) const;
 		void EmitEpilog() const;
-		void EmitCallToSearch(int offset, uint64_t searchData, void *searchFunction);
-		
+		void EmitCallToSearch(int offset, uint64_t searchData, const void *searchFunction);
+        void EmitCallToSearchDataLabel(int offset, uint32_t dataLabel, const void *searchFunction);
+
 		bool ShouldDirectBranchToStartingInstruction() const { return registersToSave.numberOfRegisters == 1 && type != PatternProcessorType::BitState; }
 	};
 }
@@ -142,9 +144,9 @@ AssemblerContext::AssemblerContext(Assembler &aAssembler,
 	for(uint32_t pc = 0; pc < header->numberOfInstructions; ++pc)
 	{
 		ByteCodeInstruction instruction = patternData[pc];
-		
+
 		if(!instruction.isSingleReference) ++numberOfBitStateInstructions;
-		
+
 		switch(instruction.type)
 		{
 			case InstructionType::AssertStartOfInput:
@@ -167,12 +169,12 @@ AssemblerContext::AssemblerContext(Assembler &aAssembler,
 				if(type != PatternProcessorType::BitState)
 				{
 					const ByteCodeJumpTableData* data = patternData.GetData<ByteCodeJumpTableData>(instruction.data);
-					
+
 					if(patternData.HasLookupTableTarget(*data))
 					{
 						hasByteJumpToByteJump = true;
 					}
-					
+
 					for(int i = 0; i < data->numberOfTargets; ++i)
 					{
 						byteJumpTargetPcs.Put(data->pcData[i]);
@@ -208,10 +210,10 @@ AssemblerContext::AssemblerContext(Assembler &aAssembler,
 				break;
 		}
 	}
-	
+
 	// Always use round number of bytes.
 	numberOfBitStateInstructions = (numberOfBitStateInstructions + 7) & -8;
-	
+
 	if(hasExternalFunctionCall)
 	{
 		captureRegisterIndex = 19;
@@ -252,18 +254,18 @@ void AssemblerContext::CheckSufficientData(int pc)
 		InstructionType::ByteNotEitherOf3,
 		InstructionType::ByteNotRange
 	};
-	
+
 	if(header->IsFixedLength() && header->IsAnchored()) return;
-	
+
 	if(pc < checkPEndPc
 	   || !COMBINE_PEND_CHECK_INSTRUCTIONS.Contains(patternData[pc].type)) return;
-	
+
 	if(patternData[pc].type == InstructionType::AdvanceByte) return;
-	
+
 	uint32_t pcEnd = pc+1;
 	while(patternData[pcEnd].isSingleReference
 		  && COMBINE_PEND_CHECK_INSTRUCTIONS.Contains(patternData[pcEnd].type)) ++pcEnd;
-	
+
 	if(pcEnd == pc+1)
 	{
 		» cmp p, pEnd
@@ -281,9 +283,9 @@ void AssemblerContext::CheckSufficientData(int pc)
 AssemblerContext::RegistersToSave AssemblerContext::GetRegistersToSave() const
 {
 	RegistersToSave result = {0};
-	
+
 	result.registers[result.numberOfRegisters++] = 30;  // Link register
-	
+
 	if(captureRegisterIndex > 17)
 	{
 		result.registers[result.numberOfRegisters++] = captureRegisterIndex;
@@ -305,7 +307,7 @@ AssemblerContext::RegistersToSave AssemblerContext::GetRegistersToSave() const
 	{
 		result.registers[result.numberOfRegisters++] = searchStartRegisterIndex;
 	}
-	
+
 	for(int i = 0; i < Minimum(int(header->numberOfProgressChecks), 4); ++i)
 	{
 		result.registers[result.numberOfRegisters++] = PROGRESS_CHECK_BASE+i;
@@ -314,12 +316,12 @@ AssemblerContext::RegistersToSave AssemblerContext::GetRegistersToSave() const
 	{
 		result.registers[result.numberOfRegisters++] = progressCheckRegisterIndex;
 	}
-	
+
 	if(type == PatternProcessorType::BitState)
 	{
 		result.registers[result.numberOfRegisters++] = bitStateRegisterIndex;
 	}
-	
+
 	return result;
 }
 
@@ -335,7 +337,7 @@ void AssemblerContext::EmitProlog(bool partialMatch, bool hasOffset) const
 
 		JASSERT(registersToSave.numberOfRegisters >= 2);
 		» stp reg64{registersToSave.registers[0]}, reg64{registersToSave.registers[1]}, [sp, #{-stackSize}]!
-		
+
 		for(int i = 2; i < registersToSave.numberOfRegisters-1; i += 2)
 		{
 			» stp reg64{registersToSave.registers[i]}, reg64{registersToSave.registers[i+1]}, [sp, #{i*8}]
@@ -345,29 +347,29 @@ void AssemblerContext::EmitProlog(bool partialMatch, bool hasOffset) const
 			» str reg64{registersToSave.registers[registersToSave.numberOfRegisters-1]}, [sp, #{8*registersToSave.numberOfRegisters - 8}]
 		}
 	}
-	
+
 	if(!header->flags.matchRequiresEndOfInput)
 	{
 		» movz reg64{isPartialMatchRegisterIndex}, #{partialMatch}
 	}
-	
+
 	if(needsRecurseValue)
 	{
 		» mov reg64{recurseValueRegisterIndex}, #-1
 	}
-	
+
 	if(header->numberOfProgressChecks)
 	{
 		for(int i = 0; i < Minimum(int(header->numberOfProgressChecks), 4); ++i)
 		{
 			» mov reg32{PROGRESS_CHECK_BASE+i}, #0
 		}
-		
+
 		if(header->numberOfProgressChecks > 4)
 		{
 			int progressCheckOffset = 16 + 8*((registersToSave.numberOfRegisters+1) & -2);
 			int stackSlots = header->numberOfProgressChecks - 4;
-			
+
 			for(int i = 0; i < stackSlots; i += 2)
 			{
 				» stp wzr, wzr, [sp, #{8*i + progressCheckOffset}]
@@ -375,7 +377,7 @@ void AssemblerContext::EmitProlog(bool partialMatch, bool hasOffset) const
 			» mov reg64{progressCheckRegisterIndex}, sp
 		}
 	}
-	
+
 	if(needsStart)
 	{
 		» mov reg64{startRegisterIndex}, x1
@@ -389,7 +391,7 @@ void AssemblerContext::EmitProlog(bool partialMatch, bool hasOffset) const
 
 		// Calculate: (length+1) * bitStateBytes
 		//            == length * bitStateBytes + bitStateBytes
-		
+
 		» mov w10, #{numberOfBitStateInstructions/8}
 		if(hasOffset)
 		{
@@ -400,7 +402,7 @@ void AssemblerContext::EmitProlog(bool partialMatch, bool hasOffset) const
 		{
 			»  madd x11, x2, x10, x10
 		}
-		
+
 		»  add x11, x11, #15
 		»  mov x10, sp
 		»  lsr x11, x11, #4
@@ -417,7 +419,7 @@ void AssemblerContext::EmitEpilog() const
 	{
 		» add sp, sp, #4096
 	}
-	
+
 	if(!ShouldDirectBranchToStartingInstruction())
 	{
 		int stackSize = 8*((registersToSave.numberOfRegisters+1) & -2);
@@ -425,13 +427,13 @@ void AssemblerContext::EmitEpilog() const
 		{
 			stackSize += 8*(((header->numberOfProgressChecks-4) + 1) & -2);
 		}
-		
+
 		JASSERT(registersToSave.numberOfRegisters >= 2);
 		if(registersToSave.numberOfRegisters & 1)
 		{
 			» ldr reg64{registersToSave.registers[registersToSave.numberOfRegisters-1]}, [sp, #{8*registersToSave.numberOfRegisters - 8}]
 		}
-		
+
 		for(int i = (registersToSave.numberOfRegisters & -2); i > 2;)
 		{
 			i -= 2;
@@ -442,28 +444,28 @@ void AssemblerContext::EmitEpilog() const
 	}
 }
 
-void AssemblerContext::EmitCallToSearch(int offset, uint64_t searchData, void *searchFunction)
+void AssemblerContext::EmitCallToSearch(int offset, uint64_t searchData, const void *searchFunction)
 {
 	size_t searchFunctionPtr = (size_t) searchFunction;
-	
-	» add x0, p, #{offset}
-	» cmp x0, pEnd
-	» b.hs *fail
+
+    » add x0, p, #{offset}
+    » cmp x0, pEnd
+    » b.hs *fail
 
 	if(type == PatternProcessorType::BitState)
 	{
 		» str p, [sp, #-16]!
 	}
-	
-	» mov64 x1, searchData
-	» stp pEnd, lr, [sp, #-16]!
+
+	»   mov64 x1, searchData
+	»   stp pEnd, lr, [sp, #-16]!
 	» .if delta26x4{searchFunctionPtr}
 	»   bl {searchFunctionPtr}
 	» .else
 	»   mov64 x9, searchFunctionPtr
 	»   blr x9
 	» .endif
-	» ldp pEnd, lr, [sp], #16
+	»   ldp pEnd, lr, [sp], #16
 
 	if(type == PatternProcessorType::BitState)
 	{
@@ -480,7 +482,7 @@ void AssemblerContext::EmitCallToSearch(int offset, uint64_t searchData, void *s
 		{
 			» add x0, x0, #{offset}
 		}
-		
+
 		if(BitUtility::IsPowerOf2(numberOfBitStateInstructions))
 		{
 			» add reg64{bitStateRegisterIndex}, reg64{bitStateRegisterIndex}, x0, lsl #{__builtin_ctz(numberOfBitStateInstructions/8)}
@@ -491,6 +493,57 @@ void AssemblerContext::EmitCallToSearch(int offset, uint64_t searchData, void *s
 			» madd reg64{bitStateRegisterIndex}, x0, x11, reg64{bitStateRegisterIndex}
 		}
 	}
+}
+
+void AssemblerContext::EmitCallToSearchDataLabel(int offset, uint32_t dataLabel, const void *searchFunction)
+{
+    size_t searchFunctionPtr = (size_t) searchFunction;
+
+    » add x0, p, #{offset}
+    » cmp x0, pEnd
+    » b.hs *fail
+
+    if(type == PatternProcessorType::BitState)
+    {
+        » str p, [sp, #-16]!
+    }
+
+    »   adr x1, {dataLabel}f // searchData
+    »   stp pEnd, lr, [sp, #-16]!
+    » .if delta26x4{searchFunctionPtr}
+    »   bl {searchFunctionPtr}
+    » .else
+    »   mov64 x9, searchFunctionPtr
+    »   blr x9
+    » .endif
+    »   ldp pEnd, lr, [sp], #16
+
+    if(type == PatternProcessorType::BitState)
+    {
+        » ldr x10, [sp], #16
+    }
+
+    » cbz x0, *fail
+    » sub p, x0, #{offset}
+
+    if(type == PatternProcessorType::BitState)
+    {
+        » sub x0, p, x10
+        if(offset != 0)
+        {
+            » add x0, x0, #{offset}
+        }
+
+        if(BitUtility::IsPowerOf2(numberOfBitStateInstructions))
+        {
+            » add reg64{bitStateRegisterIndex}, reg64{bitStateRegisterIndex}, x0, lsl #{__builtin_ctz(numberOfBitStateInstructions/8)}
+        }
+        else
+        {
+            » mov x11, #{numberOfBitStateInstructions/8}
+            » madd reg64{bitStateRegisterIndex}, x0, x11, reg64{bitStateRegisterIndex}
+        }
+    }
 }
 
 //============================================================================
@@ -520,7 +573,7 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 	» destructor:
 	»   brk #0										// Should never be called.
 	» provideCaptures:
-	
+
 	if(type == PatternProcessorType::BackTracking
 	   || type == PatternProcessorType::OnePass)
 	{
@@ -532,10 +585,10 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 	{
 		» *canUseFullMatchProgram:
 	}
-	
+
 	»   mov w0, #1
 	»   ret
-	
+
 	if(type == PatternProcessorType::BitState)
 	{
 		// Need: (length+1) * context.numberOfBitStateInstructions <= MAXIMUM_BITS
@@ -560,7 +613,7 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 			» ret
 		}
 	}
-	
+
 	» *fullMatch:  									// data, length
 	if(header->flags.alwaysRequiresCaptures)
 	{
@@ -640,12 +693,12 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 	»   mov w0, #0
 	» *done:
 	»   ret
-	
+
 	for(uint32_t pc = 0; pc < numberOfInstructions; ++pc)
 	{
 		// Force instructions not to be aligned to differentiate between jump table address and code address
 		»  markStartOfInstruction pc
-		
+
 		ByteCodeInstruction instruction = patternData[pc];
 		if(type == PatternProcessorType::BitState)
 		{
@@ -656,7 +709,7 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 			if(pc - lastFail >= 128)
 			{
 				lastFail = pc;
-				
+
 				» b 1f
 				»  markStartOfInstruction TypeData<uint32_t>::Maximum()
 				» *fail:
@@ -842,14 +895,14 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 							» b.ne *fail
 							break;
 						}
-						
+
 						offset += stride;
 					}
 					stride >>= 1;
 				}
 				» advanceBitStateIfNecessary numberOfConsecutiveByteBitMaskInstructions
 				pc += numberOfConsecutiveByteBitMaskInstructions-1;
-				
+
 			}
 			break;
 		case InstructionType::ByteEitherOf2:
@@ -888,7 +941,7 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 		case InstructionType::ByteBitMask:
 			{
 				» adr x9, {pc+0x10000}f
-				
+
 				int numberOfConsecutiveByteBitMaskInstructions =
 					1 + patternData.CountSingleReferenceInstructions(pc+1,
 																	 InstructionType::ByteBitMask,
@@ -918,7 +971,7 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 							» cbz w0, *fail
 							continue;
 						}
-						
+
 						for(int i = 0; i < stride; ++i)
 						{
 							» ubfx x0, x10, #{i*8}, #8
@@ -1055,7 +1108,7 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 										 (void*) &PatternProcessor::FindByte);
 				» add p, p, #1
 				» advanceBitStateIfNecessary 1
-				
+
 				if((instruction.data >> 8) != pc+1)
 				{
 					» b {instruction.data >> 8}bf
@@ -1086,43 +1139,15 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 			}
 			break;
 		case InstructionType::SearchByteEitherOf4:
-			{
-				const ByteCodeSearchByteData* data = patternData.GetData<ByteCodeSearchByteData>(instruction.data);
-				context.EmitCallToSearch(data->offset,
-										 data->GetFourBytes(),
-										 (void*) &PatternProcessor::FindByteEitherOf4);
-			}
-			break;
 		case InstructionType::SearchByteEitherOf5:
-			{
-				const ByteCodeSearchByteData* data = patternData.GetData<ByteCodeSearchByteData>(instruction.data);
-				context.EmitCallToSearch(data->offset,
-										 data->GetAllBytes(),
-										 (void*) &PatternProcessor::FindByteEitherOf5);
-			}
-			break;
 		case InstructionType::SearchByteEitherOf6:
-			{
-				const ByteCodeSearchByteData* data = patternData.GetData<ByteCodeSearchByteData>(instruction.data);
-				context.EmitCallToSearch(data->offset,
-										 data->GetAllBytes(),
-										 (void*) &PatternProcessor::FindByteEitherOf6);
-			}
-			break;
 		case InstructionType::SearchByteEitherOf7:
-			{
-				const ByteCodeSearchByteData* data = patternData.GetData<ByteCodeSearchByteData>(instruction.data);
-				context.EmitCallToSearch(data->offset,
-										 data->GetAllBytes(),
-										 (void*) &PatternProcessor::FindByteEitherOf7);
-			}
-			break;
 		case InstructionType::SearchByteEitherOf8:
 			{
-				const ByteCodeSearchByteData* data = patternData.GetData<ByteCodeSearchByteData>(instruction.data);
-				context.EmitCallToSearch(data->offset,
-										 data->GetAllBytes(),
-										 (void*) &PatternProcessor::FindByteEitherOf8);
+                const ByteCodeSearchByteData* data = patternData.GetData<ByteCodeSearchByteData>(instruction.data);
+                context.EmitCallToSearchDataLabel(data->offset,
+                                                  0x10000 + pc,
+                                                  (void*) InternalFindNibbleMask);
 			}
 			break;
 		case InstructionType::SearchBytePair:
@@ -1142,19 +1167,16 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 			}
 			break;
 		case InstructionType::SearchBytePair3:
-			{
-				const ByteCodeSearchByteData* data = patternData.GetData<ByteCodeSearchByteData>(instruction.data);
-				context.EmitCallToSearch(data->offset,
-										 data->GetAllBytes(),
-										 (void*) &PatternProcessor::FindBytePair3);
-			}
-			break;
 		case InstructionType::SearchBytePair4:
 			{
-				const ByteCodeSearchByteData* data = patternData.GetData<ByteCodeSearchByteData>(instruction.data);
-				context.EmitCallToSearch(data->offset,
-										 data->GetAllBytes(),
-										 (void*) &PatternProcessor::FindBytePair4);
+                const ByteCodeSearchByteData* data = patternData.GetData<ByteCodeSearchByteData>(instruction.data);
+                const ByteCodeSearchMultiByteData* smbd = (ByteCodeSearchMultiByteData*) &data->bytes[8];
+
+				context.EmitCallToSearchDataLabel(data->offset,
+                                                  0x10000 + pc,
+                                                  smbd->isPath
+                                                  ? (void*) InternalFindPairNibbleMaskPath
+                                                  : (void*) InternalFindPairNibbleMask);
 			}
 			break;
 		case InstructionType::SearchByteRange:
@@ -1197,7 +1219,7 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 				{
 					» mov x10, p
 				}
-				
+
 				»  adr x11, {0x10000+pc}f
 				»  add p, p, #{searchData->length}
 				» repeat:
@@ -1208,11 +1230,11 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 				»  add p, p, x0
 				»  cbnz w0, repeat
 				»  sub p, p, #{searchData->length}
-				
+
 				if(type == PatternProcessorType::BitState)
 				{
 					» sub x0, p, x10
-					
+
 					if(BitUtility::IsPowerOf2(context.numberOfBitStateInstructions))
 					{
 						» add pBitState, pBitState, x0, lsl #{__builtin_ctz(context.numberOfBitStateInstructions/8)}
@@ -1227,38 +1249,30 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 			break;
 		case InstructionType::SearchShiftOr:
 			{
-				if(type == PatternProcessorType::BitState)
-				{
-					» str p, [sp, #-16]!
-				}
+                const ByteCodeSearchShiftOrData* searchData = patternData.GetData<ByteCodeSearchShiftOrData>(instruction.data);
+                if (0 < searchData->numberOfNibbleMasks && searchData->numberOfNibbleMasks <= 3)
+                {
+                    static constexpr const void *const FUNCTION_TABLE[3][2] = {
+                        { (void*) InternalFindNibbleMask, (void*) InternalFindNibbleMask },
+                        { (void*) InternalFindPairNibbleMask, (void*) InternalFindPairNibbleMaskPath },
+                        { (void*) InternalFindTripletNibbleMask, (void*) InternalFindTripletNibbleMaskPath },
+                    };
 
-				»   mov x0, x1
-				»   adr x1, {0x10000+pc}f // searchData
-				»   stp pEnd, lr, [sp, #-16]!
-				» .if delta26x4{&PatternProcessor::FindShiftOr}
-				»   bl {&PatternProcessor::FindShiftOr}
-				» .else
-				»   mov64 x9, &PatternProcessor::FindShiftOr
-				»   blr x9
-				» .endif
-				»   ldp pEnd, lr, [sp], #16
-				»   mov p, x0
-				
+                    const void *function = FUNCTION_TABLE[searchData->numberOfNibbleMasks-1][searchData->isPath];
+
+                    context.EmitCallToSearchDataLabel(0,
+                                                      0x10000 + pc,
+                                                      function);
+                }
+                else
+                {
+                    context.EmitCallToSearchDataLabel(0,
+                                                      0x10000 + pc,
+                                                      (void*) &PatternProcessor::FindShiftOr);
+                }
+
 				if(type == PatternProcessorType::BitState)
 				{
-					» ldr x10, [sp], #16
-					» cbz x0, *fail
-					» sub x0, p, x10
-					
-					if(BitUtility::IsPowerOf2(context.numberOfBitStateInstructions))
-					{
-						» add pBitState, pBitState, x0, lsl #{__builtin_ctz(context.numberOfBitStateInstructions/8)}
-					}
-					else
-					{
-						» mov x11, #{context.numberOfBitStateInstructions/8}
-						» madd pBitState, x0, x11, pBitState
-					}
 					» b {pc+1}f
 				}
 				else
@@ -1267,33 +1281,42 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 					»   mov x0, #0
 					»   ret
 				}
-				
-				» .align 8
-				» {0x10000+pc}:
-				
-				const ByteCodeSearchData* searchData = patternData.GetData<ByteCodeSearchData>(instruction.data);
-				assembler.AppendData(searchData, sizeof(ByteCodeSearchData));
+
+                if(0 < searchData->numberOfNibbleMasks && searchData->numberOfNibbleMasks <= 3)
+                {
+                    » .align 16
+                    » {0x10000+pc}:
+                    assembler.AppendDataPointer(searchData->nibbleMask, 32*searchData->numberOfNibbleMasks);
+                }
+                else
+                {
+                    » .align 8
+                    » {0x10000+pc}:
+
+                    const ByteCodeSearchData* searchData = patternData.GetData<ByteCodeSearchData>(instruction.data);
+                    assembler.AppendDataPointer(searchData, sizeof(ByteCodeSearchData));
+                }
 			}
 			break;
 		case InstructionType::PropagateBackwards:
 			»   cbz captures, {pc+1}f
 			»   adr x9, {0x10000+pc}f
-				
+
 			if(type == PatternProcessorType::BitState)
 			{
 				» mov x10, p
 			}
-				
+
 			» repeat:
 			»   ldrb w0, [p, #-1]!
 			»   ldrb w0, [x9, x0]
 			»   cbnz w0, repeat
 			»   add p, p, #1
-				
+
 			if(type == PatternProcessorType::BitState)
 			{
 				» sub x0, x10, p
-				
+
 				if(BitUtility::IsPowerOf2(context.numberOfBitStateInstructions))
 				{
 					» sub pBitState, pBitState, x0, lsl #{__builtin_ctz(context.numberOfBitStateInstructions/8)}
@@ -1327,7 +1350,7 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 				» ldrb w0, [p]
 				» ldrb w0, [x9, x0]
 				» cbz w0, {data->pcData[0]}bf
-				
+
 				if(data->pcData[1] != pc+1)
 				{
 					» b {data->pcData[1]}bf
@@ -1341,11 +1364,11 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 				» cmp p, pEnd
 				» b.hs {jumpRangeData->pcData[0]}bf
 				» ldrb w0, [p]
-				
+
 				if(jumpRangeData->range.GetSize() == 0)
 				{
 					» cmp w0, #{jumpRangeData->range.min}
-					
+
 					if(jumpRangeData->pcData[0] == pc + 1)
 					{
 						» b.eq {jumpRangeData->pcData[1]}bf
@@ -1363,7 +1386,7 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 				{
 					» sub w0, w0, #{jumpRangeData->range.min}
 					» cmp w0, #{jumpRangeData->range.GetSize()}
-					
+
 					if(jumpRangeData->pcData[0] == pc + 1)
 					{
 						» b.ls {jumpRangeData->pcData[1]}bf
@@ -1435,12 +1458,14 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 				int32_t saveOffset = instruction.data >> 8;
 				int32_t saveIndex = (instruction.data & 0xff) * 8;
 
-				if(!header->flags.alwaysRequiresCaptures
-				   && !(pc > 0 && patternData[pc-1].IsSave()))
+                bool canSkipNullCapturesCheck = header->flags.alwaysRequiresCaptures
+                    || (pc > 0 && patternData[pc-1].IsSave() && instruction.isSingleReference);
+
+				if(!canSkipNullCapturesCheck)
 				{
 					» cbz captures, *1f
 				}
-				
+
 				if(type == PatternProcessorType::OnePass
 				   || instruction.type == InstructionType::SaveNoRecurse)
 				{
@@ -1476,9 +1501,8 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 					»  ret
 					» next:
 				}
-				
-				if(!header->flags.alwaysRequiresCaptures
-				   && !patternData[pc+1].IsSave())
+
+				if(!header->flags.alwaysRequiresCaptures && !patternData[pc+1].IsSave())
 				{
 					» *1:
 				}
@@ -1499,7 +1523,7 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 				» bl {callData->callIndex}bf
 				» ldp p, lr, [sp], #16
 				» cbz x0, {callData->falseIndex}bf
-				
+
 				if(callData->trueIndex != pc + 1)
 				{
 					» b {callData->trueIndex}bf
@@ -1525,21 +1549,21 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 			{
 				int value = instruction.data & 0xff;
 				int recursePc = instruction.data >> 8;
-				
+
 				»  stp recurseValue, lr, [sp, #-16]!
 				»  mov recurseValue, #{value}
 				»  cbz captures, *1f
-				
+
 				for(int i = 0; i < header->numberOfCaptures; ++i)
 				{
 					» ldp x9, x10, [captures, #{16*i}]
 					» stp x9, x10, [sp, #-16]!
 				}
-				
+
 				» *1:
 				»  bl {recursePc}bf
 				»  cbz captures, *1f
-				
+
 				for(int i = header->numberOfCaptures-1; i >= 0; --i)
 				{
 					» ldp x9, x10, [sp], #16
@@ -1708,11 +1732,6 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 			break;
 		}
 	}
-	
-	if(context.hasByteJumpToByteJump)
-	{
-		» .align jumpTableAlignment
-	}
 
 	for(uint32_t pc = 0; pc < numberOfInstructions; ++pc)
 	{
@@ -1755,6 +1774,11 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 			{
 				const ByteCodeJumpTableData* data = patternData.GetData<ByteCodeJumpTableData>(instruction.data);
 
+                if(context.hasByteJumpToByteJump)
+                {
+                    » .align jumpTableAlignment
+                }
+
 				» {0x10000+pc}:
 				for(int i = 0; i < 256; ++i)
 				{
@@ -1787,6 +1811,36 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 				}
 			}
 			break;
+        case InstructionType::SearchByteEitherOf4:
+        case InstructionType::SearchByteEitherOf5:
+        case InstructionType::SearchByteEitherOf6:
+        case InstructionType::SearchByteEitherOf7:
+        case InstructionType::SearchByteEitherOf8:
+            {
+                const ByteCodeSearchByteData* data = patternData.GetData<ByteCodeSearchByteData>(instruction.data);
+                int numberOfBytes = int(instruction.type) - int(InstructionType::SearchByteEitherOf2) + 2;
+
+                NibbleMask nibbleMask;
+                for(int i = 0; i < numberOfBytes; ++i)
+                {
+                    nibbleMask.AddByte(data->bytes[i]);
+                }
+                » .align 16
+                » {0x10000+pc}:
+                assembler.AppendData(nibbleMask.GetNibbleMask(), 32);
+            }
+            break;
+        case InstructionType::SearchBytePair3:
+        case InstructionType::SearchBytePair4:
+            {
+                const ByteCodeSearchByteData* data = patternData.GetData<ByteCodeSearchByteData>(instruction.data);
+                const ByteCodeSearchMultiByteData* multiByteData = (ByteCodeSearchMultiByteData*) &data->bytes[8];
+
+                » .align 16
+                » {0x10000+pc}:
+                assembler.AppendDataPointer(multiByteData->nibbleMask, 64);
+            }
+            break;
 		case InstructionType::SearchBoyerMoore:
 			{
 				const ByteCodeSearchData* searchData = patternData.GetData<ByteCodeSearchData>(instruction.data);
@@ -1795,11 +1849,12 @@ static PatternProcessor *CreateArm64PatternProcessor(const void* data, size_t le
 				» {0x10000+pc}:
 				assembler.AppendDataPointer(searchData->data, sizeof(searchData->data));
 			}
+            break;
 		default:
 			break;
 		}
 	}
-	
+
 	return (PatternProcessor*) assembler.Build();
 }
 

@@ -104,7 +104,7 @@ namespace
 		int matchIsAnchoredRegisterIndex;
 		int progressCheckRegisterIndex;
 		OpenHashSet<uint32_t> byteJumpTargetPcs;
-		
+
 		int checkPEndPc = -1;
 
 		Assembler& assembler;
@@ -116,18 +116,18 @@ namespace
 			int numberOfRegisters;
 			uint8_t registers[12];
 		};
-		
+
 		RegistersToSave registersToSave;
-		
+
 		AssemblerContext(Assembler &aAssembler, const PatternData& aPatternData, const ByteCodeHeader *aHeader, PatternProcessorType aType);
-		
+
 		void CheckSufficientData(int pc);
 
 		RegistersToSave GetRegistersToSave() const;
 		void EmitProlog() const;
 		void EmitEpilog() const;
 		void EmitCallToSearch(int offset, uint64_t searchData, void *searchFunction);
-		
+
 		bool ShouldDirectBranchToStartingInstruction() const { return registersToSave.numberOfRegisters == 1; }
 	};
 }
@@ -165,12 +165,12 @@ AssemblerContext::AssemblerContext(Assembler &aAssembler, const PatternData& aPa
 			case InstructionType::ByteJumpTable:
 				{
 					const ByteCodeJumpTableData* data = patternData.GetData<ByteCodeJumpTableData>(instruction.data);
-					
+
 					if(patternData.HasLookupTableTarget(*data))
 					{
 						hasByteJumpToByteJump = true;
 					}
-					
+
 					for(int i = 0; i < data->numberOfTargets; ++i)
 					{
 						byteJumpTargetPcs.Put(data->pcData[i]);
@@ -208,7 +208,7 @@ AssemblerContext::AssemblerContext(Assembler &aAssembler, const PatternData& aPa
 				break;
 		}
 	}
-	
+
 	if(hasExternalFunctionCall)
 	{
 		startRegisterIndex = 19;
@@ -249,18 +249,18 @@ void AssemblerContext::CheckSufficientData(int pc)
 		InstructionType::ByteNotEitherOf3,
 		InstructionType::ByteNotRange
 	};
-	
+
 	if(header->IsFixedLength() && header->IsAnchored()) return;
-	
+
 	if(pc < checkPEndPc
 	   || !COMBINE_PEND_CHECK_INSTRUCTIONS.Contains(patternData[pc].type)) return;
-	
+
 	if(patternData[pc].type == InstructionType::AdvanceByte) return;
-	
+
 	uint32_t pcEnd = pc+1;
 	while(patternData[pcEnd].isSingleReference
 		  && COMBINE_PEND_CHECK_INSTRUCTIONS.Contains(patternData[pcEnd].type)) ++pcEnd;
-	
+
 	if(pcEnd == pc+1)
 	{
 		» cmp p, reg64{stopRegisterIndex}
@@ -278,9 +278,9 @@ void AssemblerContext::CheckSufficientData(int pc)
 AssemblerContext::RegistersToSave AssemblerContext::GetRegistersToSave() const
 {
 	RegistersToSave result = {0};
-	
+
 	result.registers[result.numberOfRegisters++] = 30;  // Link register
-	
+
 	if(type == PatternProcessorType::BackTracking && needsStart && startRegisterIndex > 17)
 	{
 		result.registers[result.numberOfRegisters++] = startRegisterIndex;
@@ -290,12 +290,12 @@ AssemblerContext::RegistersToSave AssemblerContext::GetRegistersToSave() const
 	{
 		result.registers[result.numberOfRegisters++] = endRegisterIndex;
 	}
-	
+
 	if(stopRegisterIndex > 17)
 	{
 		result.registers[result.numberOfRegisters++] = stopRegisterIndex;
 	}
-	
+
 	if(type == PatternProcessorType::OnePass && captureRegisterIndex > 17)
 	{
 		result.registers[result.numberOfRegisters++] = captureRegisterIndex;
@@ -305,7 +305,7 @@ AssemblerContext::RegistersToSave AssemblerContext::GetRegistersToSave() const
 	{
 		result.registers[result.numberOfRegisters++] = leftMostMatchRegisterIndex;
 	}
-	
+
 	if(type == PatternProcessorType::BackTracking && matchIsAnchoredRegisterIndex > 17)
 	{
 		result.registers[result.numberOfRegisters++] = matchIsAnchoredRegisterIndex;
@@ -321,7 +321,7 @@ AssemblerContext::RegistersToSave AssemblerContext::GetRegistersToSave() const
 			result.registers[result.numberOfRegisters++] = progressCheckRegisterIndex;
 		}
 	}
-	
+
 	return result;
 }
 
@@ -337,7 +337,7 @@ void AssemblerContext::EmitProlog() const
 
 		JASSERT(registersToSave.numberOfRegisters >= 2);
 		» stp reg64{registersToSave.registers[0]}, reg64{registersToSave.registers[1]}, [sp, #{-stackSize}]!
-		
+
 		for(int i = 2; i < registersToSave.numberOfRegisters-1; i += 2)
 		{
 			» stp reg64{registersToSave.registers[i]}, reg64{registersToSave.registers[i+1]}, [sp, #{i*8}]
@@ -347,19 +347,19 @@ void AssemblerContext::EmitProlog() const
 			» str reg64{registersToSave.registers[registersToSave.numberOfRegisters-1]}, [sp, #{8*registersToSave.numberOfRegisters - 8}]
 		}
 	}
-	
+
 	if(header->numberOfProgressChecks)
 	{
 		for(int i = 0; i < Minimum(int(header->numberOfProgressChecks), 4); ++i)
 		{
 			» mov reg32{PROGRESS_CHECK_BASE+i}, #0
 		}
-		
+
 		if(header->numberOfProgressChecks > 4)
 		{
 			int progressCheckOffset = 16 + 8*((registersToSave.numberOfRegisters+1) & -2);
 			int stackSlots = header->numberOfProgressChecks - 4;
-			
+
 			for(int i = 0; i < stackSlots; i += 2)
 			{
 				» stp wzr, wzr, [sp, #{8*i + progressCheckOffset}]
@@ -378,13 +378,13 @@ void AssemblerContext::EmitEpilog() const
 		{
 			stackSize += 8*(((header->numberOfProgressChecks-4) + 1) & -2);
 		}
-		
+
 		JASSERT(registersToSave.numberOfRegisters >= 2);
 		if(registersToSave.numberOfRegisters & 1)
 		{
 			» ldr reg64{registersToSave.registers[registersToSave.numberOfRegisters-1]}, [sp, #{8*registersToSave.numberOfRegisters - 8}]
 		}
-		
+
 		for(int i = (registersToSave.numberOfRegisters & -2); i > 2;)
 		{
 			i -= 2;
@@ -428,7 +428,7 @@ static ReverseProcessor *CreateArm64ReverseProcessor(const void* data, size_t le
 	int lastFail = 0;
 
 	JASSERT(header->flags.alwaysRequiresCaptures == false);
-	
+
 	Assembler assembler;
 	AssemblerContext context(assembler, patternData, header, type);
 
@@ -458,7 +458,7 @@ static ReverseProcessor *CreateArm64ReverseProcessor(const void* data, size_t le
 	default:
 		JUNREACHABLE;
 	}
-	
+
 	» *match:		// data, length, startOffset, matchEnd, **captures, matchIsAnchored
 
 	context.EmitProlog();
@@ -501,7 +501,7 @@ static ReverseProcessor *CreateArm64ReverseProcessor(const void* data, size_t le
 		if(pc - lastFail >= 4096)
 		{
 			lastFail = pc;
-			
+
 			» b 1f
 			»  markStartOfInstruction TypeData<uint32_t>::Maximum()
 			» *fail:
@@ -651,7 +651,7 @@ static ReverseProcessor *CreateArm64ReverseProcessor(const void* data, size_t le
 				}
 				»  ldrb w0, [p, #-1]!
 				»  ldr x9, [x9, w0, uxtw #3]
-				
+
 				const ByteCodeJumpTableData* data = patternData.GetData<ByteCodeJumpTableData>(instruction.data);
 				if(context.hasByteJumpToByteJump
 				   && patternData.HasLookupTableTarget(*data))
@@ -749,7 +749,7 @@ static ReverseProcessor *CreateArm64ReverseProcessor(const void* data, size_t le
 				»  ldrb w0, [p, #-1]!
 				»  cmp w0, #{instruction.data & 0xff}
 				»  b.ne 1b
-				
+
 				if((instruction.data >> 8) != pc+1)
 				{
 					» b {instruction.data >> 8}bf
@@ -777,7 +777,7 @@ static ReverseProcessor *CreateArm64ReverseProcessor(const void* data, size_t le
 				» b.ls {data->pcData[0]}bf
 				» ldurb w0, [p, #-1]
 				» ldrb w0, [x9, w0, uxtw]
-				
+
 				if(data->pcData[0] == pc+1)
 				{
 					» cbnz w0, {data->pcData[1]}bf
@@ -800,11 +800,11 @@ static ReverseProcessor *CreateArm64ReverseProcessor(const void* data, size_t le
 				» cmp p, pStop
 				» b.ls {jumpRangeData->pcData[0]}bf
 				» ldurb w0, [p, #-1]
-				
+
 				if(jumpRangeData->range.GetSize() == 0)
 				{
 					» cmp w0, #{jumpRangeData->range.min}
-					
+
 					if(jumpRangeData->pcData[0] == pc + 1)
 					{
 						» b.eq {jumpRangeData->pcData[1]}bf
@@ -822,7 +822,7 @@ static ReverseProcessor *CreateArm64ReverseProcessor(const void* data, size_t le
 				{
 					» sub w0, w0, #{jumpRangeData->range.min}
 					» cmp w0, #{jumpRangeData->range.GetSize()}
-					
+
 					if(jumpRangeData->pcData[0] == pc + 1)
 					{
 						» b.ls {jumpRangeData->pcData[1]}bf
@@ -1050,7 +1050,7 @@ static ReverseProcessor *CreateArm64ReverseProcessor(const void* data, size_t le
 			break;
 		}
 	}
-	
+
 	if(context.hasByteJumpToByteJump)
 	{
 		» .align jumpTableAlignment
@@ -1122,7 +1122,7 @@ static ReverseProcessor *CreateArm64ReverseProcessor(const void* data, size_t le
 			break;
 		}
 	}
-	
+
 	return (ReverseProcessor*) assembler.Build();
 }
 

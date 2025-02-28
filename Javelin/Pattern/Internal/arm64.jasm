@@ -1,4 +1,6 @@
 // mov64 will try and use adr, adrp and then a series of mov instructions
+» .arm64
+»
 » .macro mov64 D, V
 » .if adr{V}
 »   adr D, {V}
