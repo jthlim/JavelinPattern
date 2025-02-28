@@ -2,7 +2,9 @@ CC=clang++
 ODIR=build
 CPPFLAGS=-O3 -I. -std=c++17 -fomit-frame-pointer -DJBUILDCONFIG_FINAL -DNDEBUG
 
-ASSEMBLER_SOURCES = Javelin/Assembler/JitForwardReferenceMap.cpp \
+ASSEMBLER_SOURCES = \
+		    Javelin/Assembler/BitUtilty.cpp \
+			 	Javelin/Assembler/JitForwardReferenceMap.cpp \
 		    Javelin/Assembler/JitLabelId.cpp \
 		    Javelin/Assembler/JitLabelMap.cpp \
 		    Javelin/Assembler/JitLabelOffsetQueue.cpp \
@@ -16,10 +18,13 @@ ASSEMBLER_SOURCES = Javelin/Assembler/JitForwardReferenceMap.cpp \
 		    Javelin/Assembler/JitVector.cpp \
 		    Javelin/Assembler/arm64/ActionType.cpp \
 		    Javelin/Assembler/arm64/Assembler.cpp \
-		    Javelin/Assembler/x64/Assembler.cpp
+		    Javelin/Assembler/riscv/Assembler.cpp \
+		    Javelin/Assembler/x64/Assembler.cpp \
 
-JASM_SOURCES = Javelin/Assembler/arm64/ActionType.cpp \
+JASM_SOURCES = \
+	       Javelin/Assembler/BitUtility.cpp \
 	       Javelin/Assembler/JitLabelId.cpp \
+				 Javelin/Assembler/arm64/ActionType.cpp \
 	       Javelin/Tools/jasm/AssemblerException.cpp \
 	       Javelin/Tools/jasm/Character.cpp \
 	       Javelin/Tools/jasm/CodeSegment.cpp \
@@ -30,6 +35,25 @@ JASM_SOURCES = Javelin/Assembler/arm64/ActionType.cpp \
 	       Javelin/Tools/jasm/Preprocessor.cpp \
 	       Javelin/Tools/jasm/SourceFileSegments.cpp \
 	       Javelin/Tools/jasm/main.cpp \
+	       Javelin/Tools/jasm/Common/Action.cpp \
+	       Javelin/Tools/jasm/Common/JumpType.cpp \
+	       Javelin/Tools/jasm/arm64/Action.cpp \
+	       Javelin/Tools/jasm/arm64/Assembler.cpp \
+	       Javelin/Tools/jasm/arm64/Encoder.cpp \
+	       Javelin/Tools/jasm/arm64/Instruction.cpp \
+	       Javelin/Tools/jasm/arm64/InstructionData.cpp \
+	       Javelin/Tools/jasm/arm64/Register.cpp \
+	       Javelin/Tools/jasm/arm64/Token.cpp \
+	       Javelin/Tools/jasm/arm64/Tokenizer.cpp \
+	       Javelin/Tools/jasm/riscv/Action.cpp \
+	       Javelin/Tools/jasm/riscv/Assembler.cpp \
+	       Javelin/Tools/jasm/riscv/Encoder.cpp \
+	       Javelin/Tools/jasm/riscv/Instruction.cpp \
+	       Javelin/Tools/jasm/riscv/InstructionData.cpp \
+	       Javelin/Tools/jasm/riscv/Register.cpp \
+	       Javelin/Tools/jasm/riscv/RoundingMode.cpp \
+	       Javelin/Tools/jasm/riscv/Token.cpp \
+	       Javelin/Tools/jasm/riscv/Tokenizer.cpp \
 	       Javelin/Tools/jasm/x64/Action.cpp \
 	       Javelin/Tools/jasm/x64/Assembler.cpp \
 	       Javelin/Tools/jasm/x64/Encoder.cpp \
@@ -38,14 +62,6 @@ JASM_SOURCES = Javelin/Assembler/arm64/ActionType.cpp \
 	       Javelin/Tools/jasm/x64/Register.cpp \
 	       Javelin/Tools/jasm/x64/Token.cpp \
 	       Javelin/Tools/jasm/x64/Tokenizer.cpp \
-	       Javelin/Tools/jasm/arm64/Action.cpp \
-	       Javelin/Tools/jasm/arm64/Assembler.cpp \
-	       Javelin/Tools/jasm/arm64/Encoder.cpp \
-	       Javelin/Tools/jasm/arm64/Instruction.cpp \
-	       Javelin/Tools/jasm/arm64/InstructionData.cpp \
-	       Javelin/Tools/jasm/arm64/Register.cpp \
-	       Javelin/Tools/jasm/arm64/Token.cpp \
-	       Javelin/Tools/jasm/arm64/Tokenizer.cpp
 
 help:
 	@echo
